@@ -1,0 +1,2876 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pokémon Elite Challenge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Exo+2:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#e6001a;--dark-red:#990011;--gold:#ffd700;--gold2:#ffe566;
+  --bg:#06091a;--bg2:#090e24;--panel:rgba(10,16,44,0.97);--card:rgba(16,24,60,0.92);
+  --border:rgba(50,70,160,0.45);--border2:rgba(90,120,240,0.7);
+  --text:#c8d8ff;--muted:#5e6f9a;--dim:#8896bc;
+  --green:#22c55e;--yellow:#eab308;--orange:#f97316;--red2:#ef4444;
+  --px:'Press Start 2P',monospace;--font:'Exo 2','Segoe UI',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;display:flex;flex-direction:column;align-items:center;overflow-x:hidden;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+/* VISUAL BUILDER */
+.team-tab{opacity:.6;}
+.team-tab.active{opacity:1;border-color:var(--gold2);color:var(--gold2);}
+.bld-input{width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:8px;font-size:12px;font-family:var(--font);}
+.bld-row{display:flex;align-items:center;gap:10px;margin-top:8px;}
+.bld-row label{width:100px;flex-shrink:0;font-size:11px;color:var(--muted);}
+.bld-suggest{position:absolute;top:100%;left:0;right:0;background:var(--panel);border:1px solid var(--border2);border-radius:8px;max-height:220px;overflow-y:auto;z-index:20;display:none;}
+.bld-suggest.show{display:block;}
+.bld-suggest-item{padding:8px 12px;cursor:pointer;font-size:12px;text-transform:capitalize;}
+.bld-suggest-item:hover{background:rgba(90,120,240,.18);}
+.bld-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px;}
+.bld-stat-cell{display:flex;flex-direction:column;gap:3px;}
+.bld-stat-cell label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+.bld-moves-list{max-height:220px;overflow-y:auto;margin-top:6px;border:1px solid var(--border);border-radius:8px;}
+.bld-move-item{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid rgba(90,120,240,.12);}
+.bld-move-item:last-child{border-bottom:none;}
+.bld-move-item.picked{background:rgba(255,215,0,.12);color:var(--gold2);}
+.bld-move-item.disabled{opacity:.35;cursor:not-allowed;}
+.team-slot-x{position:absolute;top:2px;right:2px;background:rgba(220,20,20,.85);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;line-height:1;}
+
+/* SCREENS */
+.screen{display:none;width:100%;max-width:960px;padding:16px;}
+.screen.active{display:flex;flex-direction:column;animation:screenIn .3s ease;}
+@keyframes screenIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* TITLE SCREEN */
+#screen-title{align-items:center;justify-content:center;min-height:100vh;gap:18px;text-align:center;position:relative;overflow:hidden;padding:0;}
+canvas#stars{position:fixed;top:0;left:0;pointer-events:none;z-index:0;}
+.title-content{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:16px;}
+.title-eyebrow{font-family:var(--px);font-size:8px;color:var(--muted);letter-spacing:4px;}
+.title-main{font-family:var(--px);font-size:clamp(20px,5vw,36px);background:linear-gradient(135deg,#ffd700 0%,#fff5a0 50%,#ffb700 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.3;text-shadow:none;filter:drop-shadow(0 0 20px rgba(255,215,0,.35));}
+.title-sub{font-size:13px;color:var(--muted);max-width:380px;line-height:1.6;}
+.title-dino{width:120px;height:120px;image-rendering:pixelated;animation:bob 1.4s ease-in-out infinite alternate;filter:drop-shadow(0 0 18px rgba(255,215,0,.3));}
+@keyframes bob{from{transform:translateY(0) rotate(-1deg);}to{transform:translateY(-12px) rotate(1deg);}}
+.title-regions{font-size:9px;color:var(--muted);letter-spacing:2px;}
+.title-btns{display:flex;flex-direction:column;gap:10px;align-items:center;}
+
+/* BUTTONS */
+.btn-primary{background:linear-gradient(135deg,#cc0011 0%,#990011 100%);color:#fff;border:1px solid rgba(255,100,100,.3);padding:13px 36px;font-family:var(--px);font-size:11px;cursor:pointer;letter-spacing:2px;text-transform:uppercase;transition:all .15s;box-shadow:0 4px 16px rgba(220,0,20,.3);}
+.btn-primary:hover{filter:brightness(1.15);transform:scale(1.02);box-shadow:0 6px 24px rgba(220,0,20,.5);}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.btn-gold{background:linear-gradient(135deg,#8a7000 0%,#c0a000 100%);color:var(--gold2);border:1px solid rgba(255,215,0,.3);padding:12px 28px;font-family:var(--px);font-size:10px;cursor:pointer;letter-spacing:1px;transition:all .15s;}
+.btn-gold:hover{filter:brightness(1.2);transform:scale(1.02);}
+.btn-secondary{background:var(--card);border:1px solid var(--border);color:var(--text);font-family:var(--font);font-size:12px;padding:8px 16px;cursor:pointer;letter-spacing:.5px;transition:all .1s;}
+.btn-secondary:hover:not(:disabled){border-color:var(--gold);color:var(--gold);}
+.btn-secondary:disabled{opacity:.3;cursor:not-allowed;}
+
+/* PANELS */
+.panel{background:var(--panel);border:1px solid var(--border);padding:18px;margin-bottom:0;}
+.panel-title{font-family:var(--px);font-size:8px;color:var(--gold);letter-spacing:2px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px;display:flex;align-items:center;gap:8px;}
+
+/* TEAM BUILDER */
+#screen-team{gap:14px;padding-top:20px;}
+.team-import-wrap{position:relative;}
+textarea{width:100%;background:rgba(0,0,0,.6);border:1px solid var(--border);color:var(--text);font-family:'Courier New',monospace;font-size:11px;padding:12px;resize:vertical;min-height:190px;line-height:1.7;}
+textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 1px rgba(255,215,0,.2);}
+.team-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:10px;}
+.poke-card{background:var(--card);border:1px solid var(--border);padding:8px;text-align:center;min-height:118px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;transition:border-color .2s;}
+.poke-card:hover{border-color:var(--border2);}
+.poke-card img{width:72px;height:72px;image-rendering:pixelated;object-fit:contain;}
+.poke-name{font-size:9px;color:var(--gold);text-transform:uppercase;word-break:break-all;line-height:1.3;font-weight:700;}
+.poke-level{font-size:8px;color:var(--muted);}
+.type-badge{display:inline-block;font-size:7px;padding:2px 5px;border-radius:2px;text-transform:uppercase;font-weight:bold;color:#fff;margin:1px;}
+.msg-err{color:#ff5566;font-size:11px;padding:6px 0;}
+.msg-ok{color:var(--green);font-size:11px;padding:6px 0;}
+
+/* HUB */
+#screen-hub{gap:14px;}
+.hub-header{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:14px 18px;background:var(--panel);border:1px solid var(--border);}
+.bp-block .bp-label{font-size:9px;color:var(--muted);font-family:var(--px);}
+.bp-block .bp-val{font-size:26px;color:var(--gold);font-weight:800;}
+.hub-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:640px){.hub-grid{grid-template-columns:1fr;}.team-grid{grid-template-columns:repeat(3,1fr);}}
+.region-card{background:var(--panel);border:1px solid var(--border);padding:16px 18px;cursor:pointer;transition:all .18s;position:relative;overflow:hidden;}
+.region-card:not(.locked):hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 8px 28px rgba(60,100,255,.12);}
+.region-card.locked{opacity:.45;cursor:not-allowed;}
+.region-card.done{border-color:rgba(34,197,94,.45);}
+.region-card .rc-bar{position:absolute;top:0;left:0;right:0;height:3px;}
+.rc-kanto .rc-bar{background:linear-gradient(90deg,#cc0000,#ff6666);}
+.rc-johto .rc-bar{background:linear-gradient(90deg,#0044cc,#88bbff);}
+.rc-hoenn .rc-bar{background:linear-gradient(90deg,#007744,#44ff99);}
+.rc-sinnoh .rc-bar{background:linear-gradient(90deg,#7700cc,#cc88ff);}
+.rc-unova .rc-bar{background:linear-gradient(90deg,#222,#888);}
+.rc-kalos .rc-bar{background:linear-gradient(90deg,#006699,#44ccff);}
+.rc-alola .rc-bar{background:linear-gradient(90deg,#ff7700,#ffcc44);}
+.rc-galar .rc-bar{background:linear-gradient(90deg,#7a0026,#e23b6d);}
+.rc-paldea .rc-bar{background:linear-gradient(90deg,#6a1bbf,#c77dff);}
+.rc-name{font-family:var(--px);font-size:10px;color:var(--gold);margin-bottom:5px;margin-top:4px;}
+.rc-info{font-size:11px;color:var(--muted);}
+.rc-prog{height:4px;background:rgba(255,255,255,.08);margin-top:10px;border-radius:2px;overflow:hidden;}
+.rc-prog-fill{height:100%;background:var(--red);transition:width .4s;border-radius:2px;}
+.rc-prog-fill.done{background:var(--green);}
+.rc-check{position:absolute;top:12px;right:14px;color:var(--green);font-size:18px;}
+.rc-lock{position:absolute;top:12px;right:14px;color:var(--muted);font-size:14px;}
+.shop-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.shop-card{background:var(--card);border:1px solid var(--border);padding:13px;text-align:center;cursor:pointer;transition:all .15s;}
+.shop-card:hover{border-color:var(--gold);}
+.shop-name{font-size:11px;color:var(--text);font-weight:700;margin-bottom:3px;}
+.shop-cost{font-size:16px;color:var(--gold);font-weight:800;}
+.shop-desc{font-size:9px;color:var(--muted);margin-top:4px;line-height:1.5;}
+.shop-qty{font-size:10px;color:var(--dim);margin-top:5px;}
+.save-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:6px;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:.4;}50%{opacity:1;}}
+
+/* INTRO */
+#screen-intro{align-items:center;justify-content:center;min-height:100vh;gap:0;}
+.intro-scene{width:100%;max-width:720px;height:360px;position:relative;overflow:hidden;border:2px solid var(--border);}
+.intro-bg{position:absolute;inset:0;}
+.intro-floor{position:absolute;bottom:0;left:0;right:0;height:90px;border-top:2px solid rgba(60,80,160,.5);}
+.intro-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .08s;}
+.intro-player{position:absolute;bottom:90px;width:96px;height:96px;image-rendering:pixelated;transition:left 1.4s cubic-bezier(.4,0,.2,1);}
+.intro-trainer{position:absolute;bottom:90px;width:96px;height:96px;image-rendering:pixelated;transition:right 1.4s cubic-bezier(.4,0,.2,1);transform:scaleX(-1);}
+.intro-vs{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:var(--px);font-size:48px;color:var(--gold);text-shadow:0 0 40px rgba(255,215,0,.7);opacity:0;transition:opacity .35s;}
+.intro-vs.show{opacity:1;}
+.intro-trainer-info{position:absolute;bottom:96px;right:14px;text-align:right;opacity:0;transition:opacity .4s;}
+.intro-trainer-info.show{opacity:1;}
+.iti-name{font-family:var(--px);font-size:9px;color:var(--gold);}
+.iti-title{font-size:11px;color:var(--text);}
+.intro-text{padding:18px;font-size:14px;color:var(--text);letter-spacing:1px;text-align:center;min-height:54px;background:var(--panel);border:1px solid var(--border);border-top:none;max-width:720px;width:100%;}
+
+/* BATTLE ARENA */
+#screen-battle{gap:0;}
+.battle-arena{position:relative;height:306px;overflow:hidden;border:1px solid var(--border);border-bottom:none;}
+.ba-default{background:linear-gradient(180deg,#050d1e 0%,#0d1d3a 45%,#152a50 75%,#0f2040 100%);}
+.ba-fire{background:linear-gradient(180deg,#120400 0%,#2d0900 45%,#451200 75%,#380d00 100%);}
+.ba-water{background:linear-gradient(180deg,#020818 0%,#050f28 45%,#081838 75%,#051025 100%);}
+.ba-ice{background:linear-gradient(180deg,#020c18 0%,#041428 45%,#071e38 75%,#051628 100%);}
+.ba-ghost{background:linear-gradient(180deg,#040108 0%,#0c0420 45%,#120630 75%,#0a0420 100%);}
+.ba-psychic{background:linear-gradient(180deg,#100320 0%,#200640 45%,#300860 75%,#250650 100%);}
+.ba-fighting{background:linear-gradient(180deg,#100405 0%,#220810 45%,#341218 75%,#28090f 100%);}
+.ba-dark{background:linear-gradient(180deg,#030305 0%,#08080c 45%,#0e0c14 75%,#0a0910 100%);}
+.ba-ground{background:linear-gradient(180deg,#0e0800 0%,#1e1200 45%,#2c1c00 75%,#231600 100%);}
+.ba-steel{background:linear-gradient(180deg,#080a10 0%,#101520 45%,#182030 75%,#141828 100%);}
+.ba-dragon{background:linear-gradient(180deg,#030818 0%,#070e2e 45%,#0c1440 75%,#091030 100%);}
+.ba-bug{background:linear-gradient(180deg,#040800 0%,#0a1500 45%,#101e00 75%,#0c1800 100%);}
+.ba-poison{background:linear-gradient(180deg,#0c0010 0%,#160020 45%,#200030 75%,#1a0025 100%);}
+.arena-floor{position:absolute;bottom:0;left:0;right:0;height:80px;border-top:1px solid rgba(60,80,160,.3);}
+.hp-box{position:absolute;background:rgba(6,9,26,.95);border:1px solid rgba(50,70,160,.6);padding:9px 13px;min-width:210px;}
+.hp-box.enemy-box{top:12px;left:12px;}
+.hp-box.player-box{bottom:12px;right:12px;}
+.hp-row1{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.hp-poke-name{font-size:12px;color:var(--text);font-weight:700;}
+.hp-poke-lv{font-size:9px;color:var(--muted);}
+.hp-track{height:6px;background:rgba(255,255,255,.08);margin:4px 0 2px;border-radius:3px;overflow:hidden;}
+.hp-fill{height:100%;transition:width .5s ease,background .3s;border-radius:3px;}
+.hp-nums{font-size:9px;color:var(--muted);text-align:right;}
+.status-tag{display:inline-block;font-size:8px;padding:1px 5px;font-weight:800;color:#fff;letter-spacing:.5px;}
+.st-BRN{background:#cc5500;}.st-PAR{background:#cccc00;color:#000;}.st-PSN{background:#7700cc;}
+.st-SLP{background:#445566;}.st-FRZ{background:#0088cc;}
+.poke-sprite-enemy{position:absolute;bottom:104px;right:80px;image-rendering:pixelated;width:120px;height:120px;}
+.poke-sprite-player{position:absolute;bottom:20px;left:70px;image-rendering:pixelated;width:120px;height:120px;}
+.sp-shake{animation:spShake .35s;}
+@keyframes spShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-10px)}75%{transform:translateX(10px)}}
+.sp-faint{animation:spFaint .6s forwards;}
+@keyframes spFaint{to{transform:translateY(80px);opacity:0}}
+.arena-shadow{position:absolute;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.4) 0%,transparent 70%);}
+.shadow-enemy{width:130px;height:18px;bottom:106px;right:50px;}
+.shadow-player{width:130px;height:18px;bottom:20px;left:42px;}
+.weather-indicator{position:absolute;top:10px;right:10px;font-size:9px;color:var(--dim);background:rgba(0,0,0,.65);padding:3px 10px;border:1px solid var(--border);display:none;}
+/* Damage floats */
+.dmg-float{position:absolute;font-family:var(--px);font-size:13px;color:#ff5566;pointer-events:none;z-index:20;animation:dfloat .9s ease-out forwards;}
+.dmg-float.heal{color:var(--green);}
+.dmg-float.miss{color:var(--muted);font-size:11px;}
+.dmg-float.super-eff{color:var(--gold);font-size:15px;}
+@keyframes dfloat{0%{opacity:1;transform:translateY(0);}100%{opacity:0;transform:translateY(-48px);}}
+/* Party dots */
+.party-row{display:flex;gap:5px;padding:5px 10px;background:rgba(0,0,0,.5);}
+.party-dot{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.15);transition:all .3s;}
+.party-dot.active{border-color:var(--gold);box-shadow:0 0 8px rgba(255,215,0,.5);}
+.party-dot.fainted{background:#333!important;}
+
+/* BATTLE UI */
+.battle-ui{background:var(--panel);border:1px solid var(--border);padding:11px;}
+.battle-log{min-height:56px;max-height:72px;overflow-y:auto;font-size:11px;margin-bottom:9px;line-height:1.8;padding:4px 8px;background:rgba(0,0,0,.5);border:1px solid var(--border);}
+.ll-damage{color:#ff8866;}.ll-heal{color:#66cc66;}.ll-info{color:var(--muted);}.ll-super{color:#ffcc00;}.ll-resist{color:#7777aa;}
+.moves-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:8px;}
+.move-btn{background:var(--card);border:1px solid var(--border);color:var(--text);font-family:var(--font);font-size:12px;padding:9px 10px;cursor:pointer;text-align:left;transition:all .1s;display:flex;justify-content:space-between;align-items:center;gap:6px;}
+.move-btn:hover:not(:disabled){filter:brightness(1.2);transform:scale(1.01);}
+.move-btn:disabled{opacity:.25;cursor:not-allowed;}
+.move-left{display:flex;align-items:center;gap:6px;flex:1;min-width:0;}
+.move-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.move-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.move-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.move-type-mini{font-size:8px;padding:2px 5px;border-radius:2px;text-transform:uppercase;font-weight:800;white-space:nowrap;}
+.move-pp{font-size:9px;color:var(--muted);}
+.battle-actions{display:flex;gap:6px;align-items:center;}
+.party-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin:7px 0;}
+.party-btn{background:var(--card);border:1px solid var(--border);color:var(--text);font-family:var(--font);font-size:10px;padding:8px;cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px;transition:all .1s;}
+.party-btn:hover:not(:disabled){border-color:var(--gold);}
+.party-btn:disabled{opacity:.25;cursor:not-allowed;}
+.party-btn img{width:52px;height:52px;image-rendering:pixelated;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,10,.88);z-index:200;align-items:center;justify-content:center;}
+.modal-overlay.active{display:flex;}
+.modal{background:var(--panel);border:2px solid var(--gold);padding:26px;max-width:500px;width:92%;text-align:center;animation:screenIn .2s ease;}
+.modal h2{color:var(--gold);margin-bottom:12px;font-family:var(--px);font-size:14px;}
+.modal p{font-size:12px;color:var(--dim);margin-bottom:18px;line-height:1.8;}
+.modal-btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+
+/* TYPES */
+.t-normal{background:#A8A878;}.t-fire{background:#F08030;}.t-water{background:#6890F0;}
+.t-electric{background:#F8D030;color:#333;}.t-grass{background:#78C850;}.t-ice{background:#98D8D8;color:#333;}
+.t-fighting{background:#C03028;}.t-poison{background:#A040A0;}.t-ground{background:#E0C068;color:#333;}
+.t-flying{background:#A890F0;}.t-psychic{background:#F85888;}.t-bug{background:#A8B820;}
+.t-rock{background:#B8A038;}.t-ghost{background:#705898;}.t-dragon{background:#7038F8;}
+.t-dark{background:#705848;}.t-steel{background:#B8B8D0;color:#333;}.t-fairy{background:#EE99AC;color:#333;}
+
+/* Save toast */
+.save-toast{position:fixed;bottom:22px;right:22px;background:var(--panel);border:1px solid var(--gold);color:var(--gold);padding:8px 16px;font-family:var(--px);font-size:8px;z-index:300;animation:toastAnim 2.4s ease forwards;pointer-events:none;}
+@keyframes toastAnim{0%{opacity:0;transform:translateY(8px);}15%{opacity:1;transform:translateY(0);}80%{opacity:1;}100%{opacity:0;transform:translateY(-8px);}}
+
+/* ═══ MEJORAS v3: INICIO, BOTÓN HOME Y MENÚS MÁS GRANDES ═══ */
+/* Fondo de la pantalla de inicio con inicio.png */
+#screen-title{
+  background-image:linear-gradient(rgba(4,6,18,.35),rgba(4,6,18,.55)),url('./inicio.png');
+  background-size:cover;background-position:center;background-repeat:no-repeat;
+  max-width:100%;width:100vw;
+}
+.title-overlay{position:absolute;inset:0;z-index:0;background:radial-gradient(ellipse at center,rgba(6,9,26,.55) 0%,rgba(6,9,26,.25) 35%,transparent 65%);pointer-events:none;}
+.title-content{background:rgba(6,9,26,.45);backdrop-filter:blur(2px);border:1px solid var(--border);border-radius:14px;padding:34px 40px;box-shadow:0 18px 60px rgba(0,0,0,.55);}
+.title-main{font-family:var(--px);font-size:clamp(26px,6vw,52px);}
+.title-sub-line{font-size:clamp(16px,3.5vw,30px);color:#fff5a0;}
+.title-eyebrow{font-size:10px;letter-spacing:6px;color:var(--gold2);}
+.title-sub{font-size:14px;max-width:420px;color:#aab8e0;}
+.title-regions{font-size:10px;color:#9aa8d0;letter-spacing:1px;max-width:440px;line-height:1.8;}
+.title-btns{gap:14px;}
+#screen-title .btn-primary{font-size:13px;padding:16px 44px;}
+#screen-title .btn-gold{font-size:12px;padding:14px 36px;}
+
+/* Botón HOME (volver al inicio) */
+#btn-home{position:fixed;top:14px;left:14px;z-index:150;display:none;
+  background:linear-gradient(135deg,#15203f 0%,#0c1430 100%);color:var(--gold2);
+  border:1px solid var(--border2);border-radius:10px;font-family:var(--px);font-size:9px;
+  letter-spacing:1px;padding:11px 16px;cursor:pointer;transition:all .15s;
+  box-shadow:0 4px 16px rgba(0,0,0,.45);}
+#btn-home:hover{filter:brightness(1.25);transform:translateY(-1px);border-color:var(--gold);}
+
+/* Menús / paneles más grandes y visuales */
+.screen{max-width:1040px;}
+.panel{padding:24px;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.3);}
+.panel-title{font-size:10px;margin-bottom:18px;padding-bottom:12px;}
+.hub-header{padding:18px 24px;border-radius:14px;}
+.bp-block .bp-val{font-size:32px;}
+.region-card{padding:20px 24px;border-radius:12px;}
+.rc-name{font-size:12px;margin-bottom:7px;}
+.rc-info{font-size:12px;}
+.shop-card{padding:18px;border-radius:12px;}
+.shop-name{font-size:13px;}
+.shop-cost{font-size:19px;}
+.shop-desc{font-size:10px;}
+.poke-card{min-height:140px;border-radius:12px;padding:12px;}
+.poke-card img{width:84px;height:84px;}
+.poke-name{font-size:10px;}
+
+/* Combate más grande */
+.battle-arena{height:360px;border-radius:14px 14px 0 0;}
+.poke-sprite-enemy{width:150px;height:150px;right:90px;bottom:120px;}
+.poke-sprite-player{width:150px;height:150px;left:80px;bottom:22px;}
+.shadow-enemy{width:150px;bottom:122px;right:60px;}
+.shadow-player{width:150px;bottom:22px;left:50px;}
+.hp-box{min-width:240px;padding:12px 16px;border-radius:10px;}
+.hp-poke-name{font-size:14px;}
+.hp-track{height:8px;}
+.battle-ui{padding:16px;border-radius:0 0 14px 14px;}
+.battle-log{min-height:70px;max-height:90px;font-size:13px;padding:8px 12px;border-radius:8px;}
+.move-btn{font-size:14px;padding:13px 14px;border-radius:9px;}
+.moves-grid{gap:8px;}
+.battle-actions{gap:8px;}
+.btn-secondary{font-size:13px;padding:10px 18px;border-radius:8px;}
+.party-btn{font-size:11px;padding:11px;border-radius:9px;}
+.party-btn img{width:60px;height:60px;}
+.party-dot{width:22px;height:22px;}
+.dmg-float{font-size:16px;}
+.dmg-float.super-eff{font-size:19px;}
+
+/* Trainer portrait en combate */
+.battle-trainer{position:absolute;top:54px;right:16px;width:74px;height:74px;image-rendering:pixelated;
+  border:2px solid var(--border2);border-radius:10px;background:rgba(6,9,26,.7);object-fit:cover;
+  box-shadow:0 4px 14px rgba(0,0,0,.5);display:none;z-index:5;}
+
+/* Modal más grande */
+.modal{padding:32px;border-radius:16px;max-width:560px;}
+.modal h2{font-size:16px;}
+.modal p{font-size:14px;}
+
+/* Selección de personaje */
+#screen-charselect{min-height:100vh;justify-content:center;align-items:center;}
+.char-grid{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin:10px 0;}
+.char-card{background:var(--card);border:2px solid var(--border);border-radius:16px;padding:22px 28px;cursor:pointer;
+  transition:all .18s;display:flex;flex-direction:column;align-items:center;gap:12px;min-width:180px;}
+.char-card:hover{border-color:var(--gold);transform:translateY(-4px);box-shadow:0 10px 30px rgba(255,215,0,.18);}
+.char-card.selected{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,215,0,.4);}
+.char-card img{width:150px;height:150px;object-fit:contain;image-rendering:pixelated;
+  filter:drop-shadow(0 6px 14px rgba(0,0,0,.5));}
+.char-name{font-family:var(--px);font-size:12px;color:var(--gold2);letter-spacing:2px;}
+
+@media(max-width:680px){
+  #screen-title .btn-primary{font-size:11px;padding:13px 30px;}
+  .title-content{padding:22px 18px;margin:0 12px;}
+  .title-regions{line-height:1.6;font-size:9px;}
+
+  body{overflow-x:hidden;}
+  .screen{padding:8px;max-width:100%;}
+  #btn-home{top:auto;bottom:10px;left:10px;padding:9px 12px;font-size:8px;}
+
+  /* Paneles compactos */
+  .panel{padding:14px;border-radius:12px;margin-bottom:10px;}
+  .panel-title{font-size:9px;margin-bottom:12px;padding-bottom:9px;}
+
+  /* Hub: apilar en columna, BP y objetos legibles */
+  .hub-header{grid-template-columns:1fr;gap:8px;padding:12px 14px;text-align:center;}
+  .hub-header>div:first-child{justify-self:center;}
+  .bp-block .bp-val{font-size:24px;}
+  #items-val{font-size:10px;}
+  .hub-header>div[style*="flex"]{justify-content:center;}
+  .hub-grid{grid-template-columns:1fr;}
+  .shop-grid{grid-template-columns:repeat(2,1fr);gap:6px;}
+  .shop-card{padding:12px;}
+  .shop-name{font-size:11px;}
+  .shop-cost{font-size:15px;}
+  .region-card{padding:14px 16px;}
+
+  /* Equipo: tarjetas más pequeñas para caber 6 en pantalla */
+  .team-grid{grid-template-columns:repeat(3,1fr);gap:6px;}
+  .poke-card{min-height:100px;padding:8px;}
+  .poke-card img{width:56px;height:56px;}
+  .poke-name{font-size:8px;}
+
+  /* Creador visual: campos apilados y más táctiles */
+  .bld-row{flex-direction:column;align-items:stretch;gap:3px;}
+  .bld-row label{width:auto;}
+  .bld-input,select.bld-input{font-size:14px;padding:10px 12px;}
+  .bld-stat-grid{grid-template-columns:repeat(3,1fr);}
+  .bld-move-item{padding:10px 12px;font-size:12px;}
+  .team-tab{font-size:10px;padding:10px 8px;}
+
+  /* COMBATE: la parte que más se usa en móvil */
+  .battle-arena{height:250px;border-radius:12px 12px 0 0;}
+  .poke-sprite-enemy,.poke-sprite-player{width:96px;height:96px;}
+  .poke-sprite-enemy{right:50px;bottom:88px;}
+  .poke-sprite-player{left:36px;bottom:14px;}
+  .shadow-enemy{width:100px;bottom:90px;right:30px;}
+  .shadow-player{width:100px;bottom:16px;left:20px;}
+  .hp-box{min-width:0;width:46%;padding:7px 9px;border-radius:8px;}
+  .hp-box.enemy-box{top:8px;left:8px;}
+  .hp-box.player-box{bottom:8px;right:8px;}
+  .hp-poke-name{font-size:10px;}
+  .hp-poke-lv{font-size:9px;}
+  .hp-nums{font-size:9px;}
+  .hp-track{height:6px;}
+  .battle-trainer{width:48px;height:48px;top:8px;right:8px;}
+
+  .battle-ui{padding:10px;border-radius:0 0 12px 12px;}
+  .battle-log{min-height:44px;max-height:56px;font-size:11px;padding:6px 8px;}
+  .moves-grid{grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;}
+  .move-btn{font-size:11px;padding:12px 10px;border-radius:9px;min-height:48px;}
+  .move-name{font-size:11px;}
+  .move-pp{font-size:9px;}
+  .move-type-mini{font-size:8px;}
+  .battle-actions{gap:6px;flex-wrap:wrap;}
+  .battle-actions .btn-secondary{flex:1;min-width:0;padding:11px 6px;font-size:10px;}
+  .party-row{padding:4px 6px;overflow-x:auto;}
+  .party-dot{width:16px;height:16px;flex-shrink:0;}
+  .party-grid{grid-template-columns:repeat(2,1fr);}
+  .party-btn{padding:8px;font-size:10px;}
+  .party-btn img{width:44px;height:44px;}
+
+  .modal{padding:20px 16px;border-radius:14px;max-width:94vw;}
+  .modal h2{font-size:14px;}
+  .modal p{font-size:12px;}
+  .modal-btns .btn-primary,.modal-btns .btn-secondary{font-size:11px;padding:10px 14px;}
+
+  /* Personajes y créditos */
+  .char-grid{gap:14px;}
+  .char-card{padding:16px 18px;min-width:130px;}
+  .char-card img{width:100px;height:100px;}
+}
+@media(max-width:400px){
+  .team-grid{grid-template-columns:repeat(3,1fr);}
+  .bld-stat-grid{grid-template-columns:repeat(2,1fr);}
+  .battle-arena{height:220px;}
+}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<button id="btn-home" onclick="goHome()" title="Volver al inicio">🏠 INICIO</button>
+
+<!-- TITLE -->
+<div id="screen-title" class="screen active">
+  <div class="title-overlay"></div>
+  <div class="title-content">
+    <div class="title-eyebrow">★ POKÉMON ★</div>
+    <div class="title-main">ELITE 4<br><span class="title-sub-line">EL DESAFÍO</span></div>
+    <div class="title-sub">Derrota a todos los Altos Mandos de las 9 regiones y conviértete en el mejor entrenador</div>
+    <div class="title-btns">
+      <button class="btn-primary" onclick="newGame()">▶ NUEVA PARTIDA</button>
+      <button class="btn-gold" id="btn-continue" style="display:none" onclick="continueGame()">↩ CONTINUAR</button>
+      <a href="./modolibre.html" class="btn-secondary" style="text-decoration:none;display:inline-block;">🔓 MODO LIBRE (TODO DESBLOQUEADO)</a>
+    </div>
+    <div class="title-regions">🔴 Kanto · 🌙 Johto · 🌊 Hoenn · 💎 Sinnoh · ⚫ Unova · 🌸 Kalos · 🌺 Alola · ⚔️ Galar · 🟣 Paldea</div>
+  </div>
+</div>
+
+<!-- CHARSELECT -->
+<div id="screen-charselect" class="screen">
+  <div class="panel" style="text-align:center;width:100%;">
+    <div class="panel-title" style="justify-content:center;">🧢 ELIGE TU PERSONAJE</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Esta será tu skin cuando te enfrentes a los Altos Mandos</p>
+    <div class="char-grid">
+      <div class="char-card" id="char-boy" onclick="chooseSkin('trainer1.png','Chico')">
+        <img src="./trainer1.png" onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/trainers/red.png';" alt="Chico">
+        <div class="char-name">CHICO</div>
+      </div>
+      <div class="char-card" id="char-girl" onclick="chooseSkin('trainer2.png','Chica')">
+        <img src="./trainer2.png" onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/trainers/leaf.png';" alt="Chica">
+        <div class="char-name">CHICA</div>
+      </div>
+    </div>
+    <button class="btn-secondary" onclick="goTo('title')" style="margin-top:18px;">← Volver</button>
+  </div>
+</div>
+
+<!-- DIFFICULTY SELECT -->
+<div id="screen-difficulty" class="screen">
+  <div class="panel" style="text-align:center;">
+    <div class="panel-title" style="justify-content:center;">🎚 ELIGE LA DIFICULTAD DE TU PARTIDA</div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Es un roguelike: la dificultad queda fija para toda la partida. Solo se puede cambiar si pierdes o empiezas una nueva partida.</p>
+    <div style="display:flex;flex-direction:column;gap:12px;max-width:420px;margin:0 auto;">
+      <div class="poke-card" style="cursor:pointer;text-align:left;padding:14px;" onclick="chooseDifficulty('easy')">
+        <div style="font-family:var(--px);font-size:11px;color:var(--green);">🟢 FÁCIL</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;">Rivales hasta nivel 50. Full IVs / Full EVs.</div>
+      </div>
+      <div class="poke-card" style="cursor:pointer;text-align:left;padding:14px;" onclick="chooseDifficulty('medium')">
+        <div style="font-family:var(--px);font-size:11px;color:var(--yellow);">🟡 MEDIO</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;">Rivales hasta nivel 75. Full IVs / Full EVs.</div>
+      </div>
+      <div class="poke-card" style="cursor:pointer;text-align:left;padding:14px;" onclick="chooseDifficulty('extreme')">
+        <div style="font-family:var(--px);font-size:11px;color:var(--red2);">🔴 EXTREMO</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;">Todos los rivales a nivel 100. Full IVs / Full EVs.</div>
+      </div>
+    </div>
+    <button class="btn-secondary" onclick="goTo('charselect')" style="margin-top:18px;">← Volver</button>
+  </div>
+</div>
+
+<!-- TEAM BUILDER -->
+<div id="screen-team" class="screen">
+  <div style="display:flex;gap:8px;margin-bottom:10px;">
+    <button class="btn-secondary team-tab active" id="tab-btn-paste" onclick="switchTeamTab('paste')" style="flex:1;">📋 PASTE</button>
+    <button class="btn-secondary team-tab" id="tab-btn-builder" onclick="switchTeamTab('builder')" style="flex:1;">🛠 CREAR VISUAL</button>
+  </div>
+  <div id="tab-paste" class="panel">
+    <div class="panel-title">📋 IMPORTAR EQUIPO — Formato Showdown / Pokepast</div>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:8px;">Soporta apodos, IVs, EVs, naturalezas, habilidades y objetos. Sets competitivos recomendados. Reemplaza tu equipo actual.</p>
+    <textarea id="paste-input" placeholder="Garchomp @ Rocky Helmet&#10;Ability: Rough Skin&#10;EVs: 252 Atk / 4 SpD / 252 Spe&#10;Jolly Nature&#10;- Earthquake&#10;- Dragon Claw&#10;- Stealth Rock&#10;- Fire Fang"></textarea>
+    <div id="parse-err" class="msg-err" style="display:none;"></div>
+    <div id="parse-ok" class="msg-ok" style="display:none;"></div>
+    <div style="display:flex;gap:8px;margin-top:9px;flex-wrap:wrap;">
+      <button class="btn-primary" onclick="importTeam()">IMPORTAR EQUIPO</button>
+      <button class="btn-secondary" onclick="loadExample()">⚡ Equipo de ejemplo</button>
+      <button class="btn-secondary" onclick="goTo('title')" style="margin-left:auto;">← Volver</button>
+    </div>
+  </div>
+  <div id="tab-builder" class="panel" style="display:none;">
+    <div class="panel-title">🛠 CREAR POKÉMON</div>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:8px;">Busca un Pokémon, elige sus movimientos reales, IVs, EVs, naturaleza, objeto y habilidad. Se AÑADE a tu equipo (máx. 6).</p>
+
+    <div style="position:relative;">
+      <input type="text" id="bld-search" class="bld-input" placeholder="Buscar Pokémon (ej: garchomp)..." autocomplete="off" oninput="bldSearchInput()">
+      <div id="bld-suggest" class="bld-suggest"></div>
+    </div>
+
+    <div id="bld-preview" style="display:none;margin-top:12px;">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <img id="bld-sprite" src="" style="width:72px;height:72px;image-rendering:pixelated;">
+        <div>
+          <div id="bld-name" style="font-family:var(--px);font-size:12px;color:var(--gold);"></div>
+          <div id="bld-types" style="margin-top:4px;"></div>
+        </div>
+      </div>
+
+      <div class="bld-row">
+        <label>Nivel (1-100)</label>
+        <input type="number" id="bld-level" min="1" max="100" value="100" class="bld-input">
+      </div>
+      <div class="bld-row">
+        <label>Naturaleza</label>
+        <select id="bld-nature" class="bld-input"></select>
+      </div>
+      <div class="bld-row">
+        <label>Habilidad</label>
+        <select id="bld-ability" class="bld-input"></select>
+      </div>
+      <div class="bld-row">
+        <label>Objeto</label>
+        <select id="bld-item" class="bld-input"><option value="none">Ninguno</option></select>
+      </div>
+
+      <div class="panel-title" style="font-size:11px;margin-top:12px;">IVs (0-31) <button class="btn-secondary" style="font-size:9px;padding:3px 8px;margin-left:8px;" onclick="bldMaxIvs()">Máx (31)</button></div>
+      <div class="bld-stat-grid" id="bld-ivs"></div>
+
+      <div class="panel-title" style="font-size:11px;margin-top:12px;">EVs (0-252, máx 508 total) — <span id="bld-ev-total">0</span>/508</div>
+      <div class="bld-stat-grid" id="bld-evs"></div>
+
+      <div class="panel-title" style="font-size:11px;margin-top:12px;">Movimientos (elige hasta 4)</div>
+      <input type="text" id="bld-move-search" class="bld-input" placeholder="Buscar movimiento..." oninput="bldRenderMoves()">
+      <div id="bld-moves" class="bld-moves-list"></div>
+
+      <div style="text-align:center;margin-top:12px;">
+        <button class="btn-primary" onclick="bldAddToTeam()">➕ AÑADIR AL EQUIPO</button>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">⚔ TU EQUIPO</div>
+    <div class="team-grid" id="team-grid"></div>
+  </div>
+  <div style="text-align:center;margin-top:6px;">
+    <button class="btn-primary" id="btn-coliseo" style="display:none;" onclick="goHub()">▶ IR AL COLISEO</button>
+  </div>
+</div>
+
+<!-- HUB -->
+<div id="screen-hub" class="screen">
+  <div class="hub-header">
+    <div class="bp-block"><div class="bp-label">BATTLE POINTS</div><div class="bp-val" id="bp-val">0 BP</div></div>
+    <span id="diff-val" style="font-size:11px;font-family:var(--px);"></span>
+    <span id="items-val" style="font-size:11px;color:var(--muted);"></span>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-secondary" id="btn-hub-equipo" onclick="goTo('team')">EQUIPO</button>
+      <button class="btn-secondary" onclick="saveGame()" style="color:var(--green);">💾 GUARDAR</button>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">🛒 TIENDA BP</div>
+    <div class="shop-grid">
+      <div class="shop-card" onclick="buyItem('revive')">
+        <div class="shop-name">REVIVIR</div>
+        <div class="shop-cost">10 BP</div>
+        <div class="shop-desc">Revive un Pokémon debilitado con 50% HP</div>
+        <div class="shop-qty" id="qty-revive"></div>
+      </div>
+      <div class="shop-card" onclick="buyItem('maxpotion')">
+        <div class="shop-name">MAX POCIÓN</div>
+        <div class="shop-cost">8 BP</div>
+        <div class="shop-desc">Restaura HP completo en combate</div>
+        <div class="shop-qty" id="qty-maxpotion"></div>
+      </div>
+      <div class="shop-card" onclick="buyItem('fullrestore')">
+        <div class="shop-name">FULL RESTORE</div>
+        <div class="shop-cost">15 BP</div>
+        <div class="shop-desc">HP completo y cura estado alterado</div>
+        <div class="shop-qty" id="qty-fullrestore"></div>
+      </div>
+      <div class="shop-card" onclick="buyItem('pprestore')">
+        <div class="shop-name">RECARGA PP</div>
+        <div class="shop-cost">6 BP</div>
+        <div class="shop-desc">Restaura todos los PP de un Pokémon</div>
+        <div class="shop-qty" id="qty-pprestore"></div>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">🏆 ALTO MANDO — ELIGE TU DESAFÍO</div>
+    <div class="hub-grid" id="regions-grid"></div>
+  </div>
+</div>
+
+<!-- PREP (curar antes del combate) -->
+<div id="screen-prep" class="screen">
+  <div class="panel">
+    <div class="panel-title">🩹 PREPARA TU EQUIPO</div>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:8px;">Antes de enfrentarte a <b id="prep-opp-name">—</b> puedes curar HP, estados y recargar PP usando tus objetos de la tienda. No podrás cambiar tu equipo.</p>
+    <div id="prep-items-bar" style="font-size:11px;color:var(--muted);margin-bottom:10px;"></div>
+    <div id="prep-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+    <div style="text-align:center;margin-top:14px;">
+      <button class="btn-primary" onclick="confirmPrep()">⚔ ENTRAR AL COMBATE</button>
+    </div>
+  </div>
+</div>
+
+<!-- INTRO -->
+<div id="screen-intro" class="screen">
+  <div class="intro-scene ba-default" id="intro-scene">
+    <div class="arena-floor" style="background:rgba(20,30,60,.4);"></div>
+    <div class="intro-flash" id="intro-flash"></div>
+    <img id="intro-player" class="intro-player" src="" alt="" style="left:-120px;">
+    <img id="intro-trainer" class="intro-trainer" src="" alt="" style="right:-120px;">
+    <div class="intro-vs" id="intro-vs">VS</div>
+    <div class="intro-trainer-info" id="iti">
+      <div class="iti-name" id="iti-name"></div>
+      <div class="iti-title" id="iti-title"></div>
+    </div>
+  </div>
+  <div class="intro-text" id="intro-text"></div>
+</div>
+
+<!-- BATTLE -->
+<div id="screen-battle" class="screen">
+  <div class="battle-arena ba-default" id="battle-arena">
+    <div class="arena-floor" id="arena-floor"></div>
+    <div class="arena-shadow shadow-enemy"></div>
+    <div class="arena-shadow shadow-player"></div>
+    <div class="weather-indicator" id="weather-bar"></div>
+    <img id="battle-trainer" class="battle-trainer" src="" alt="">
+    <div class="hp-box enemy-box">
+      <div class="hp-row1"><span class="hp-poke-name" id="e-name">—</span><span class="hp-poke-lv" id="e-lv">Lv—</span></div>
+      <div class="hp-track"><div class="hp-fill" id="e-hp-fill" style="width:100%;background:var(--green)"></div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span id="e-status"></span><span class="hp-nums" id="e-hp-nums"></span>
+      </div>
+    </div>
+    <img id="e-sprite" class="poke-sprite-enemy" src="" alt="" style="display:none;">
+    <img id="p-sprite" class="poke-sprite-player" src="" alt="" style="display:none;">
+    <div class="hp-box player-box">
+      <div class="hp-row1"><span class="hp-poke-name" id="p-name">—</span><span class="hp-poke-lv" id="p-lv">Lv—</span></div>
+      <div class="hp-track"><div class="hp-fill" id="p-hp-fill" style="width:100%;background:var(--green)"></div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span id="p-status"></span><span class="hp-nums" id="p-hp-nums"></span>
+      </div>
+    </div>
+  </div>
+  <div class="party-row" id="party-row"></div>
+  <div class="battle-ui">
+    <div class="battle-log" id="battle-log"></div>
+    <div id="moves-ui">
+      <div class="moves-grid" id="moves-grid"></div>
+      <div class="battle-actions">
+        <button class="btn-secondary" id="btn-switch" onclick="openSwitch()">CAMBIAR</button>
+        <button class="btn-secondary" id="btn-item" onclick="openItems()">MOCHILA</button>
+        <button class="btn-secondary" onclick="confirmFlee()" style="margin-left:auto;color:#ff5566;">RENDIRSE</button>
+      </div>
+    </div>
+    <div id="switch-ui" style="display:none;">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:6px;font-family:var(--px);">ELIGE TU POKÉMON:</div>
+      <div class="party-grid" id="party-grid"></div>
+      <button class="btn-secondary" onclick="closeSwitch()" style="margin-top:7px;" id="btn-cancel-switch">CANCELAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h2 id="modal-title"></h2>
+    <p id="modal-body"></p>
+    <div class="modal-btns" id="modal-btns"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// REGION & TRAINER DATA
+// ═══════════════════════════════════════════
+const REGIONS={
+  kanto:{name:'Kanto',emoji:'🔴',arenaClass:'ba-default',order:0,members:[
+    {name:'Lorelei',title:'Experta en Hielo',ts:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/trainers/lorelei.png',arena:'ba-ice',
+    teams:[[
+      {sp:'lapras',lv:60,mv:['freeze-dry','thunderbolt','hydro-pump','ice-beam'],item:'choice-specs',ability:'water-absorb',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'cloyster',lv:60,mv:['shell-smash','icicle-spear','rock-blast','ice-shard'],item:'white-herb',ability:'skill-link',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'slowbro',lv:62,mv:['scald','psychic','calm-mind','slack-off'],item:'leftovers',ability:'regenerator',evs:{hp:252,def:252,spa:4},nat:'bold'},
+      {sp:'jynx',lv:63,mv:['nasty-plot','ice-beam','psychic','lovely-kiss'],item:'life-orb',ability:'dry-skin',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'dewgong',lv:65,mv:['surf','ice-beam','toxic','protect'],item:'leftovers',ability:'thick-fat',evs:{hp:252,spd:252,def:4},nat:'calm'}
+    ],[
+      {sp:'weavile',lv:60,mv:['ice-shard','knock-off','icicle-crash','swords-dance'],item:'life-orb',ability:'pressure',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'mamoswine',lv:60,mv:['icicle-crash','earthquake','ice-shard','stone-edge'],item:'life-orb',ability:'thick-fat',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'froslass',lv:62,mv:['spikes','shadow-ball','ice-beam','destiny-bond'],item:'focus-sash',ability:'cursed-body',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'walrein',lv:63,mv:['surf','ice-beam','toxic','protect'],item:'leftovers',ability:'thick-fat',evs:{hp:252,spd:252,def:4},nat:'calm'},
+      {sp:'cloyster',lv:65,mv:['shell-smash','icicle-spear','rock-blast','ice-shard'],item:'focus-sash',ability:'skill-link',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ]]},
+    {name:'Bruno',title:'Experto en Lucha',ts:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/trainers/bruno.png',arena:'ba-fighting',
+    teams:[[
+      {sp:'onix',lv:53,mv:['stealth-rock','earthquake','stone-edge','roar'],item:'rocky-helmet',ability:'sturdy',evs:{hp:252,def:252,spd:4},nat:'impish'},
+      {sp:'hitmonchan',lv:55,mv:['ice-punch','thunder-punch','fire-punch','close-combat'],item:'choice-band',ability:'iron-fist',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'hitmonlee',lv:55,mv:['high-jump-kick','stone-edge','earthquake','blaze-kick'],item:'life-orb',ability:'reckless',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'hitmontop',lv:57,mv:['close-combat','mach-punch','stone-edge','rapid-spin'],item:'lum-berry',ability:'technician',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'machamp',lv:62,mv:['close-combat','stone-edge','bullet-punch','thunder-punch'],item:'choice-band',ability:'guts',evs:{atk:252,hp:252,spe:4},nat:'adamant'}
+    ],[
+      {sp:'lucario',lv:55,mv:['close-combat','extreme-speed','swords-dance','ice-punch'],item:'life-orb',ability:'inner-focus',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'conkeldurr',lv:57,mv:['drain-punch','mach-punch','ice-punch','thunder-punch'],item:'assault-vest',ability:'guts',evs:{hp:252,atk:252,spd:4},nat:'adamant'},
+      {sp:'breloom',lv:58,mv:['spore','mach-punch','seed-bomb','swords-dance'],item:'life-orb',ability:'technician',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'mienshao',lv:60,mv:['high-jump-kick','u-turn','stone-edge','fake-out'],item:'life-orb',ability:'reckless',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'machamp',lv:62,mv:['close-combat','bullet-punch','stone-edge','payback'],item:'choice-band',ability:'guts',evs:{atk:252,hp:252,spe:4},nat:'adamant'}
+    ]]},
+    {name:'Agatha',title:'Experta en Fantasma',ts:'',arena:'ba-ghost',
+    teams:[[
+      {sp:'gengar',lv:54,mv:['shadow-ball','sludge-wave','focus-blast','nasty-plot'],item:'focus-sash',ability:'cursed-body',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'haunter',lv:53,mv:['shadow-ball','sludge-bomb','thunderbolt','hypnosis'],item:'eviolite',ability:'levitate',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'arbok',lv:56,mv:['gunk-shot','earthquake','coil','sucker-punch'],item:'black-sludge',ability:'intimidate',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'mismagius',lv:57,mv:['shadow-ball','nasty-plot','thunderbolt','will-o-wisp'],item:'life-orb',ability:'levitate',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'gengar',lv:65,mv:['shadow-ball','sludge-wave','focus-blast','destiny-bond'],item:'life-orb',ability:'cursed-body',evs:{spa:252,spe:252,hp:4},nat:'timid'}
+    ],[
+      {sp:'dusknoir',lv:54,mv:['shadow-punch','will-o-wisp','pain-split','earthquake'],item:'leftovers',ability:'pressure',evs:{hp:252,def:252,spd:4},nat:'impish'},
+      {sp:'banette',lv:55,mv:['shadow-claw','will-o-wisp','destiny-bond','knock-off'],item:'life-orb',ability:'cursed-body',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'spiritomb',lv:57,mv:['shadow-ball','dark-pulse','will-o-wisp','nasty-plot'],item:'leftovers',ability:'pressure',evs:{hp:252,spd:252,def:4},nat:'calm'},
+      {sp:'chandelure',lv:60,mv:['shadow-ball','flamethrower','energy-ball','will-o-wisp'],item:'choice-scarf',ability:'flash-fire',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'gengar',lv:65,mv:['shadow-ball','sludge-wave','focus-blast','destiny-bond'],item:'life-orb',ability:'cursed-body',evs:{spa:252,spe:252,hp:4},nat:'timid'}
+    ]]},
+    {name:'Lance',title:'Maestro Dragón',ts:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/trainers/lance.png',arena:'ba-dragon',
+    teams:[[
+      {sp:'gyarados',lv:56,mv:['dragon-dance','waterfall','ice-fang','earthquake'],item:'lum-berry',ability:'intimidate',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'dragonair',lv:54,mv:['thunder-wave','aqua-tail','outrage','extreme-speed'],item:'eviolite',ability:'shed-skin',evs:{atk:252,def:252,hp:4},nat:'adamant'},
+      {sp:'aerodactyl',lv:58,mv:['stone-edge','earthquake','ice-fang','aerial-ace'],item:'choice-band',ability:'rock-head',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'kingdra',lv:58,mv:['draco-meteor','surf','flash-cannon','focus-energy'],item:'choice-specs',ability:'swift-swim',evs:{spa:252,spe:252,hp:4},nat:'modest'},
+      {sp:'dragonite',lv:66,mv:['outrage','extreme-speed','fire-punch','dragon-dance'],item:'choice-band',ability:'multiscale',evs:{atk:252,spe:252,hp:4},nat:'adamant'}
+    ],[
+      {sp:'salamence',lv:56,mv:['dragon-dance','outrage','earthquake','fire-blast'],item:'lum-berry',ability:'intimidate',evs:{atk:252,spe:252,hp:4},nat:'naughty'},
+      {sp:'flygon',lv:58,mv:['earthquake','dragon-claw','u-turn','fire-blast'],item:'choice-scarf',ability:'levitate',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'charizard',lv:58,mv:['fire-blast','air-slash','dragon-pulse','focus-blast'],item:'choice-specs',ability:'blaze',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'altaria',lv:60,mv:['dragon-dance','dragon-claw','earthquake','roost'],item:'lum-berry',ability:'natural-cure',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'dragonite',lv:66,mv:['hurricane','fire-blast','thunder','blizzard'],item:'choice-specs',ability:'multiscale',evs:{spa:252,spe:252,hp:4},nat:'modest'}
+    ]]},
+    {name:'Blue',title:'⭐ Campeón de Kanto',ts:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/trainers/rival.png',arena:'ba-default',
+    teams:[[
+      {sp:'pidgeot',lv:63,mv:['hurricane','heat-wave','u-turn','roost'],item:'sitrus-berry',ability:'no-guard',evs:{spe:252,spa:252,hp:4},nat:'timid'},
+      {sp:'alakazam',lv:65,mv:['psychic','focus-blast','shadow-ball','recover'],item:'life-orb',ability:'magic-guard',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'arcanine',lv:65,mv:['flare-blitz','extreme-speed','close-combat','morning-sun'],item:'leftovers',ability:'intimidate',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'exeggutor',lv:65,mv:['leaf-storm','psychic','sleep-powder','trick-room'],item:'choice-specs',ability:'harvest',evs:{spa:252,hp:252,spd:4},nat:'quiet'},
+      {sp:'rhydon',lv:65,mv:['earthquake','stone-edge','megahorn','ice-punch'],item:'eviolite',ability:'lightning-rod',evs:{atk:252,hp:252,def:4},nat:'adamant'},
+      {sp:'blastoise',lv:68,mv:['hydro-pump','ice-beam','dark-pulse','rapid-spin'],item:'leftovers',ability:'torrent',evs:{spa:252,hp:252,spd:4},nat:'modest'}
+    ],[
+      {sp:'heracross',lv:63,mv:['close-combat','megahorn','stone-edge','swords-dance'],item:'choice-scarf',ability:'moxie',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'alakazam',lv:65,mv:['psychic','focus-blast','shadow-ball','recover'],item:'life-orb',ability:'magic-guard',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'arcanine',lv:65,mv:['flare-blitz','extreme-speed','close-combat','thunder-fang'],item:'life-orb',ability:'intimidate',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'gyarados',lv:65,mv:['dragon-dance','waterfall','earthquake','ice-fang'],item:'lum-berry',ability:'intimidate',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'exeggutor',lv:65,mv:['leaf-storm','psychic','sleep-powder','energy-ball'],item:'choice-specs',ability:'harvest',evs:{spa:252,hp:252,spd:4},nat:'modest'},
+      {sp:'blastoise',lv:68,mv:['hydro-pump','ice-beam','dark-pulse','flash-cannon'],item:'choice-specs',ability:'torrent',evs:{spa:252,spe:252,hp:4},nat:'modest'}
+    ]]}
+  ]},
+  johto:{name:'Johto',emoji:'🌙',order:1,members:[
+    {name:'Will',title:'Maestro Psíquico',ts:'',arena:'ba-psychic',
+    teams:[[
+      {sp:'xatu',lv:40,mv:['psychic','air-slash','shadow-ball','roost'],item:'sitrus-berry',ability:'magic-bounce',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'jynx',lv:41,mv:['nasty-plot','ice-beam','psychic','lovely-kiss'],item:'life-orb',ability:'dry-skin',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'exeggutor',lv:41,mv:['leaf-storm','psychic','sleep-powder','trick-room'],item:'choice-specs',ability:'harvest',evs:{spa:252,hp:252,spd:4},nat:'quiet'},
+      {sp:'slowbro',lv:41,mv:['scald','psychic','calm-mind','slack-off'],item:'leftovers',ability:'regenerator',evs:{hp:252,def:252,spa:4},nat:'bold'},
+      {sp:'xatu',lv:42,mv:['psychic','air-slash','thunderbolt','u-turn'],item:'choice-specs',ability:'magic-bounce',evs:{spa:252,spe:252,hp:4},nat:'timid'}
+    ],[
+      {sp:'gardevoir',lv:40,mv:['moonblast','psychic','focus-blast','shadow-ball'],item:'choice-specs',ability:'trace',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'starmie',lv:41,mv:['hydro-pump','psychic','ice-beam','thunderbolt'],item:'life-orb',ability:'natural-cure',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'slowbro',lv:41,mv:['scald','psychic','calm-mind','slack-off'],item:'leftovers',ability:'regenerator',evs:{hp:252,def:252,spa:4},nat:'bold'},
+      {sp:'alakazam',lv:42,mv:['psychic','shadow-ball','focus-blast','recover'],item:'life-orb',ability:'magic-guard',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'espeon',lv:42,mv:['psychic','shadow-ball','calm-mind','baton-pass'],item:'leftovers',ability:'magic-bounce',evs:{spa:252,spe:252,hp:4},nat:'timid'}
+    ]]},
+    {name:'Koga',title:'Maestro Veneno',ts:'',arena:'ba-poison',
+    teams:[[
+      {sp:'ariados',lv:40,mv:['megahorn','shadow-sneak','sucker-punch','poison-jab'],item:'life-orb',ability:'sniper',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'venomoth',lv:41,mv:['quiver-dance','bug-buzz','sludge-wave','sleep-powder'],item:'life-orb',ability:'tinted-lens',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'forretress',lv:43,mv:['stealth-rock','spikes','volt-switch','explosion'],item:'rocky-helmet',ability:'sturdy',evs:{hp:252,def:252,spd:4},nat:'impish'},
+      {sp:'muk',lv:42,mv:['gunk-shot','shadow-sneak','fire-punch','poison-jab'],item:'assault-vest',ability:'poison-touch',evs:{hp:252,atk:252,def:4},nat:'adamant'},
+      {sp:'crobat',lv:44,mv:['cross-poison','u-turn','roost','super-fang'],item:'black-sludge',ability:'infiltrator',evs:{spe:252,atk:252,hp:4},nat:'jolly'}
+    ],[
+      {sp:'toxicroak',lv:40,mv:['drain-punch','sucker-punch','swords-dance','ice-punch'],item:'life-orb',ability:'dry-skin',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'nidoking',lv:42,mv:['earth-power','sludge-wave','thunderbolt','ice-beam'],item:'life-orb',ability:'sheer-force',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'skuntank',lv:42,mv:['crunch','poison-jab','fire-blast','sucker-punch'],item:'black-sludge',ability:'aftermath',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'scolipede',lv:43,mv:['megahorn','poison-jab','earthquake','swords-dance'],item:'life-orb',ability:'speed-boost',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'crobat',lv:44,mv:['brave-bird','cross-poison','roost','u-turn'],item:'black-sludge',ability:'infiltrator',evs:{spe:252,atk:252,hp:4},nat:'jolly'}
+    ]]},
+    {name:'Bruno',title:'Maestro de Lucha',ts:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/trainers/bruno.png',arena:'ba-fighting',
+    teams:[[
+      {sp:'hitmontop',lv:42,mv:['close-combat','mach-punch','stone-edge','rapid-spin'],item:'lum-berry',ability:'technician',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'hitmonlee',lv:42,mv:['high-jump-kick','blaze-kick','stone-edge','earthquake'],item:'life-orb',ability:'reckless',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'hitmonchan',lv:43,mv:['close-combat','ice-punch','thunder-punch','fire-punch'],item:'choice-band',ability:'iron-fist',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'onix',lv:43,mv:['stealth-rock','earthquake','rock-slide','roar'],item:'rocky-helmet',ability:'sturdy',evs:{hp:252,def:252,spd:4},nat:'impish'},
+      {sp:'machamp',lv:46,mv:['close-combat','bullet-punch','stone-edge','thunder-punch'],item:'choice-band',ability:'guts',evs:{atk:252,hp:252,spe:4},nat:'adamant'}
+    ],[
+      {sp:'lucario',lv:42,mv:['close-combat','extreme-speed','ice-punch','swords-dance'],item:'life-orb',ability:'inner-focus',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'infernape',lv:43,mv:['close-combat','flare-blitz','thunder-punch','mach-punch'],item:'life-orb',ability:'blaze',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'heracross',lv:44,mv:['close-combat','megahorn','stone-edge','earthquake'],item:'choice-scarf',ability:'moxie',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'poliwrath',lv:44,mv:['bulk-up','waterfall','dynamic-punch','ice-punch'],item:'leftovers',ability:'water-absorb',evs:{hp:252,atk:252,def:4},nat:'adamant'},
+      {sp:'machamp',lv:46,mv:['close-combat','bullet-punch','stone-edge','ice-punch'],item:'choice-band',ability:'guts',evs:{atk:252,hp:252,spe:4},nat:'adamant'}
+    ]]},
+    {name:'Karen',title:'Maestra Siniestro',ts:'',arena:'ba-dark',
+    teams:[[
+      {sp:'umbreon',lv:42,mv:['foul-play','moonlight','wish','protect'],item:'leftovers',ability:'synchronize',evs:{hp:252,def:252,spd:4},nat:'calm'},
+      {sp:'vileplume',lv:42,mv:['moonblast','sludge-bomb','sleep-powder','giga-drain'],item:'black-sludge',ability:'effect-spore',evs:{spa:252,hp:252,spd:4},nat:'modest'},
+      {sp:'gengar',lv:45,mv:['shadow-ball','sludge-wave','focus-blast','nasty-plot'],item:'life-orb',ability:'cursed-body',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'murkrow',lv:44,mv:['brave-bird','sucker-punch','heat-wave','roost'],item:'eviolite',ability:'prankster',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'houndoom',lv:47,mv:['fire-blast','dark-pulse','nasty-plot','sludge-wave'],item:'life-orb',ability:'flash-fire',evs:{spa:252,spe:252,hp:4},nat:'timid'}
+    ],[
+      {sp:'weavile',lv:42,mv:['knock-off','ice-shard','icicle-crash','swords-dance'],item:'life-orb',ability:'pressure',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'absol',lv:43,mv:['night-slash','sucker-punch','play-rough','swords-dance'],item:'life-orb',ability:'super-luck',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'honchkrow',lv:44,mv:['brave-bird','sucker-punch','superpower','roost'],item:'life-orb',ability:'moxie',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'tyranitar',lv:45,mv:['crunch','earthquake','stone-edge','dragon-dance'],item:'lum-berry',ability:'sand-stream',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'houndoom',lv:47,mv:['fire-blast','dark-pulse','nasty-plot','sludge-wave'],item:'life-orb',ability:'flash-fire',evs:{spa:252,spe:252,hp:4},nat:'timid'}
+    ]]},
+    {name:'Lance',title:'⭐ Campeón de Johto',ts:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/trainers/lance.png',arena:'ba-dragon',
+    teams:[[
+      {sp:'gyarados',lv:46,mv:['dragon-dance','waterfall','ice-fang','earthquake'],item:'lum-berry',ability:'intimidate',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'aerodactyl',lv:46,mv:['stone-edge','earthquake','ice-fang','aerial-ace'],item:'choice-band',ability:'rock-head',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'charizard',lv:46,mv:['fire-blast','air-slash','dragon-pulse','focus-blast'],item:'choice-specs',ability:'blaze',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'dragonite',lv:47,mv:['outrage','fire-punch','extreme-speed','dragon-dance'],item:'lum-berry',ability:'multiscale',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'dragonite',lv:47,mv:['hurricane','fire-blast','thunder','draco-meteor'],item:'choice-specs',ability:'multiscale',evs:{spa:252,spe:252,hp:4},nat:'modest'},
+      {sp:'dragonite',lv:50,mv:['outrage','extreme-speed','fire-punch','earthquake'],item:'choice-band',ability:'multiscale',evs:{atk:252,spe:252,hp:4},nat:'adamant'}
+    ],[
+      {sp:'salamence',lv:46,mv:['dragon-dance','outrage','earthquake','fire-blast'],item:'lum-berry',ability:'intimidate',evs:{atk:252,spe:252,hp:4},nat:'naughty'},
+      {sp:'kingdra',lv:47,mv:['draco-meteor','surf','flash-cannon','ice-beam'],item:'choice-specs',ability:'swift-swim',evs:{spa:252,spe:252,hp:4},nat:'modest'},
+      {sp:'flygon',lv:47,mv:['earthquake','dragon-claw','u-turn','fire-blast'],item:'choice-scarf',ability:'levitate',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'charizard',lv:48,mv:['flare-blitz','dragon-claw','earthquake','dragon-dance'],item:'lum-berry',ability:'blaze',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'garchomp',lv:49,mv:['earthquake','dragon-claw','stone-edge','swords-dance'],item:'rocky-helmet',ability:'rough-skin',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'dragonite',lv:50,mv:['hurricane','fire-blast','thunder','draco-meteor'],item:'choice-specs',ability:'multiscale',evs:{spa:252,spe:252,hp:4},nat:'modest'}
+    ]]}
+  ]},
+  hoenn:{name:'Hoenn',emoji:'🌊',order:2,members:[
+    {name:'Sidney',title:'Maestro Siniestro',ts:'',arena:'ba-dark',
+    teams:[[
+      {sp:'mightyena',lv:46,mv:['crunch','sucker-punch','play-rough','ice-fang'],item:'choice-band',ability:'intimidate',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'cacturne',lv:46,mv:['sucker-punch','seed-bomb','drain-punch','spikes'],item:'life-orb',ability:'water-absorb',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'sharpedo',lv:48,mv:['crunch','waterfall','ice-fang','aqua-jet'],item:'life-orb',ability:'speed-boost',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'crawdaunt',lv:48,mv:['crabhammer','knock-off','aqua-jet','swords-dance'],item:'life-orb',ability:'adaptability',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'absol',lv:49,mv:['night-slash','sucker-punch','play-rough','swords-dance'],item:'life-orb',ability:'super-luck',evs:{atk:252,spe:252,hp:4},nat:'adamant'}
+    ],[
+      {sp:'honchkrow',lv:46,mv:['brave-bird','sucker-punch','superpower','roost'],item:'life-orb',ability:'moxie',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'bisharp',lv:47,mv:['sucker-punch','iron-head','knock-off','swords-dance'],item:'life-orb',ability:'defiant',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'hydreigon',lv:48,mv:['draco-meteor','dark-pulse','fire-blast','focus-blast'],item:'choice-scarf',ability:'levitate',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'sharpedo',lv:48,mv:['crunch','waterfall','ice-fang','aqua-jet'],item:'life-orb',ability:'speed-boost',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'absol',lv:49,mv:['night-slash','sucker-punch','play-rough','swords-dance'],item:'life-orb',ability:'super-luck',evs:{atk:252,spe:252,hp:4},nat:'adamant'}
+    ]]},
+    {name:'Phoebe',title:'Maestra Fantasma',ts:'',arena:'ba-ghost',
+    teams:[[
+      {sp:'dusclops',lv:48,mv:['shadow-ball','will-o-wisp','curse','pain-split'],item:'eviolite',ability:'pressure',evs:{hp:252,def:252,spd:4},nat:'bold'},
+      {sp:'banette',lv:49,mv:['shadow-claw','will-o-wisp','destiny-bond','knock-off'],item:'life-orb',ability:'cursed-body',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'sableye',lv:50,mv:['shadow-sneak','foul-play','will-o-wisp','recover'],item:'leftovers',ability:'prankster',evs:{hp:252,def:252,spd:4},nat:'calm'},
+      {sp:'dusknoir',lv:51,mv:['shadow-punch','will-o-wisp','pain-split','earthquake'],item:'leftovers',ability:'pressure',evs:{hp:252,def:252,spd:4},nat:'impish'},
+      {sp:'chandelure',lv:52,mv:['shadow-ball','flamethrower','energy-ball','will-o-wisp'],item:'choice-scarf',ability:'flash-fire',evs:{spa:252,spe:252,hp:4},nat:'timid'}
+    ],[
+      {sp:'mismagius',lv:48,mv:['shadow-ball','nasty-plot','thunderbolt','will-o-wisp'],item:'life-orb',ability:'levitate',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'jellicent',lv:49,mv:['scald','shadow-ball','will-o-wisp','recover'],item:'leftovers',ability:'water-absorb',evs:{hp:252,def:252,spa:4},nat:'bold'},
+      {sp:'gengar',lv:50,mv:['shadow-ball','sludge-wave','focus-blast','destiny-bond'],item:'focus-sash',ability:'cursed-body',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'dusknoir',lv:51,mv:['shadow-punch','will-o-wisp','pain-split','earthquake'],item:'leftovers',ability:'pressure',evs:{hp:252,def:252,spd:4},nat:'impish'},
+      {sp:'froslass',lv:52,mv:['spikes','shadow-ball','ice-beam','destiny-bond'],item:'focus-sash',ability:'cursed-body',evs:{spa:252,spe:252,hp:4},nat:'timid'}
+    ]]},
+    {name:'Glacia',title:'Maestra Hielo',ts:'',arena:'ba-ice',
+    teams:[[
+      {sp:'glalie',lv:50,mv:['freeze-dry','shadow-ball','spikes','explosion'],item:'focus-sash',ability:'moody',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'sealeo',lv:50,mv:['surf','ice-beam','protect','encore'],item:'leftovers',ability:'thick-fat',evs:{hp:252,spa:252,spd:4},nat:'calm'},
+      {sp:'cloyster',lv:52,mv:['shell-smash','icicle-spear','rock-blast','ice-shard'],item:'white-herb',ability:'skill-link',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'glaceon',lv:52,mv:['ice-beam','shadow-ball','water-pulse','hyper-voice'],item:'choice-specs',ability:'snow-cloak',evs:{spa:252,spe:252,hp:4},nat:'modest'},
+      {sp:'walrein',lv:53,mv:['surf','ice-beam','earthquake','toxic'],item:'leftovers',ability:'thick-fat',evs:{hp:252,spa:252,spd:4},nat:'modest'}
+    ],[
+      {sp:'weavile',lv:50,mv:['ice-shard','knock-off','icicle-crash','swords-dance'],item:'life-orb',ability:'pressure',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'mamoswine',lv:51,mv:['icicle-crash','earthquake','ice-shard','stone-edge'],item:'life-orb',ability:'thick-fat',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'lapras',lv:52,mv:['freeze-dry','thunderbolt','hydro-pump','ice-beam'],item:'choice-specs',ability:'water-absorb',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'froslass',lv:52,mv:['spikes','shadow-ball','ice-beam','destiny-bond'],item:'focus-sash',ability:'cursed-body',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'walrein',lv:53,mv:['surf','ice-beam','earthquake','toxic'],item:'leftovers',ability:'thick-fat',evs:{hp:252,spa:252,spd:4},nat:'modest'}
+    ]]},
+    {name:'Drake',title:'Maestro Dragón',ts:'',arena:'ba-dragon',
+    teams:[[
+      {sp:'altaria',lv:52,mv:['dragon-dance','dragon-claw','earthquake','roost'],item:'lum-berry',ability:'natural-cure',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'kingdra',lv:54,mv:['draco-meteor','surf','flash-cannon','ice-beam'],item:'choice-specs',ability:'swift-swim',evs:{spa:252,spe:252,hp:4},nat:'modest'},
+      {sp:'flygon',lv:53,mv:['earthquake','dragon-claw','u-turn','fire-blast'],item:'choice-scarf',ability:'levitate',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'shelgon',lv:52,mv:['outrage','dragon-claw','earthquake','protect'],item:'eviolite',ability:'rock-head',evs:{atk:252,def:252,hp:4},nat:'adamant'},
+      {sp:'salamence',lv:55,mv:['dragon-dance','outrage','earthquake','fire-blast'],item:'lum-berry',ability:'intimidate',evs:{atk:252,spe:252,hp:4},nat:'naughty'}
+    ],[
+      {sp:'dragonite',lv:52,mv:['outrage','extreme-speed','fire-punch','dragon-dance'],item:'lum-berry',ability:'multiscale',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'haxorus',lv:53,mv:['dragon-dance','outrage','earthquake','poison-jab'],item:'lum-berry',ability:'mold-breaker',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'flygon',lv:53,mv:['earthquake','dragon-claw','u-turn','fire-blast'],item:'choice-scarf',ability:'levitate',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'goodra',lv:54,mv:['draco-meteor','fire-blast','thunderbolt','sludge-wave'],item:'assault-vest',ability:'sap-sipper',evs:{hp:252,spa:252,spd:4},nat:'modest'},
+      {sp:'salamence',lv:55,mv:['dragon-dance','outrage','earthquake','fire-blast'],item:'lum-berry',ability:'intimidate',evs:{atk:252,spe:252,hp:4},nat:'naughty'}
+    ]]},
+    {name:'Steven',title:'⭐ Campeón de Hoenn',ts:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/trainers/steven.png',arena:'ba-steel',
+    teams:[[
+      {sp:'skarmory',lv:57,mv:['stealth-rock','spikes','whirlwind','brave-bird'],item:'leftovers',ability:'sturdy',evs:{hp:252,def:252,spd:4},nat:'impish'},
+      {sp:'claydol',lv:55,mv:['earth-power','psychic','cosmic-power','recover'],item:'leftovers',ability:'levitate',evs:{hp:252,def:252,spd:4},nat:'bold'},
+      {sp:'aggron',lv:56,mv:['head-smash','earthquake','iron-tail','stealth-rock'],item:'choice-band',ability:'rock-head',evs:{atk:252,hp:252,def:4},nat:'adamant'},
+      {sp:'scizor',lv:57,mv:['bullet-punch','bug-bite','superpower','swords-dance'],item:'life-orb',ability:'technician',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'armaldo',lv:56,mv:['x-scissor','rock-blast','earthquake','rapid-spin'],item:'choice-band',ability:'battle-armor',evs:{atk:252,hp:252,def:4},nat:'adamant'},
+      {sp:'metagross',lv:60,mv:['meteor-mash','earthquake','zen-headbutt','ice-punch'],item:'life-orb',ability:'clear-body',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ],[
+      {sp:'skarmory',lv:57,mv:['stealth-rock','spikes','whirlwind','brave-bird'],item:'leftovers',ability:'sturdy',evs:{hp:252,def:252,spd:4},nat:'impish'},
+      {sp:'scizor',lv:57,mv:['bullet-punch','bug-bite','superpower','swords-dance'],item:'choice-band',ability:'technician',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'jirachi',lv:58,mv:['iron-head','zen-headbutt','thunder-punch','wish'],item:'choice-scarf',ability:'serene-grace',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'lucario',lv:58,mv:['close-combat','extreme-speed','swords-dance','bullet-punch'],item:'life-orb',ability:'steadfast',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'aegislash',lv:59,mv:['shadow-ball','flash-cannon','kings-shield','sacred-sword'],item:'life-orb',ability:'stance-change',evs:{hp:252,spa:252,spd:4},nat:'quiet'},
+      {sp:'metagross',lv:60,mv:['meteor-mash','earthquake','zen-headbutt','ice-punch'],item:'life-orb',ability:'clear-body',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ]]}
+  ]},
+  sinnoh:{name:'Sinnoh',emoji:'💎',order:3,members:[
+    {name:'Aaron',title:'Maestro Bicho',ts:'',arena:'ba-bug',
+    teams:[[
+      {sp:'yanmega',lv:55,mv:['bug-buzz','air-slash','protect','ancient-power'],item:'focus-sash',ability:'speed-boost',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'scizor',lv:57,mv:['bullet-punch','bug-bite','superpower','swords-dance'],item:'choice-band',ability:'technician',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'vespiquen',lv:57,mv:['attack-order','defend-order','heal-order','toxic'],item:'leftovers',ability:'pressure',evs:{hp:252,def:252,spd:4},nat:'careful'},
+      {sp:'heracross',lv:60,mv:['close-combat','megahorn','stone-edge','swords-dance'],item:'choice-scarf',ability:'moxie',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'drapion',lv:63,mv:['crunch','cross-poison','earthquake','swords-dance'],item:'lum-berry',ability:'sniper',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ],[
+      {sp:'volcarona',lv:55,mv:['quiver-dance','fire-blast','bug-buzz','giga-drain'],item:'life-orb',ability:'flame-body',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'galvantula',lv:57,mv:['thunder','bug-buzz','energy-ball','sticky-web'],item:'focus-sash',ability:'compound-eyes',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'scizor',lv:58,mv:['bullet-punch','bug-bite','superpower','swords-dance'],item:'life-orb',ability:'technician',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'heracross',lv:60,mv:['close-combat','megahorn','stone-edge','earthquake'],item:'choice-scarf',ability:'moxie',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'drapion',lv:63,mv:['crunch','cross-poison','earthquake','swords-dance'],item:'lum-berry',ability:'sniper',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ]]},
+    {name:'Bertha',title:'Maestra Tierra',ts:'',arena:'ba-ground',
+    teams:[[
+      {sp:'whiscash',lv:58,mv:['earthquake','surf','dragon-tail','stealth-rock'],item:'leftovers',ability:'anticipation',evs:{hp:252,def:252,spd:4},nat:'relaxed'},
+      {sp:'gliscor',lv:60,mv:['earthquake','toxic','roost','protect'],item:'toxic-orb',ability:'poison-heal',evs:{hp:252,def:252,spe:4},nat:'impish'},
+      {sp:'hippowdon',lv:61,mv:['earthquake','slack-off','stealth-rock','whirlwind'],item:'leftovers',ability:'sand-stream',evs:{hp:252,def:252,spd:4},nat:'impish'},
+      {sp:'rhyperior',lv:63,mv:['earthquake','stone-edge','megahorn','ice-punch'],item:'choice-band',ability:'solid-rock',evs:{atk:252,hp:252,def:4},nat:'adamant'},
+      {sp:'garchomp',lv:65,mv:['earthquake','dragon-claw','stone-edge','swords-dance'],item:'rocky-helmet',ability:'rough-skin',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ],[
+      {sp:'excadrill',lv:58,mv:['earthquake','iron-head','rock-slide','swords-dance'],item:'life-orb',ability:'sand-rush',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'gastrodon',lv:59,mv:['scald','earth-power','recover','toxic'],item:'leftovers',ability:'storm-drain',evs:{hp:252,def:252,spd:4},nat:'calm'},
+      {sp:'hippowdon',lv:61,mv:['earthquake','slack-off','stealth-rock','whirlwind'],item:'leftovers',ability:'sand-stream',evs:{hp:252,def:252,spd:4},nat:'impish'},
+      {sp:'krookodile',lv:63,mv:['earthquake','crunch','dragon-claw','dragon-dance'],item:'choice-scarf',ability:'moxie',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'garchomp',lv:65,mv:['earthquake','dragon-claw','stone-edge','swords-dance'],item:'rocky-helmet',ability:'rough-skin',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ]]},
+    {name:'Flint',title:'Maestro Fuego',ts:'',arena:'ba-fire',
+    teams:[[
+      {sp:'houndoom',lv:58,mv:['fire-blast','dark-pulse','nasty-plot','sludge-wave'],item:'life-orb',ability:'flash-fire',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'rapidash',lv:60,mv:['flare-blitz','high-horsepower','wild-charge','morning-sun'],item:'life-orb',ability:'flash-fire',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'flareon',lv:61,mv:['flare-blitz','superpower','wish','protect'],item:'leftovers',ability:'guts',evs:{hp:252,atk:252,spd:4},nat:'adamant'},
+      {sp:'magmortar',lv:64,mv:['fire-blast','thunderbolt','focus-blast','psychic'],item:'choice-scarf',ability:'vital-spirit',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'infernape',lv:67,mv:['close-combat','flare-blitz','mach-punch','thunder-punch'],item:'life-orb',ability:'blaze',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ],[
+      {sp:'arcanine',lv:58,mv:['flare-blitz','extreme-speed','close-combat','morning-sun'],item:'leftovers',ability:'intimidate',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'ninetales',lv:60,mv:['fire-blast','nasty-plot','will-o-wisp','energy-ball'],item:'life-orb',ability:'drought',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'chandelure',lv:62,mv:['shadow-ball','flamethrower','energy-ball','will-o-wisp'],item:'choice-scarf',ability:'flash-fire',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'magmortar',lv:64,mv:['fire-blast','thunderbolt','focus-blast','psychic'],item:'choice-specs',ability:'vital-spirit',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'infernape',lv:67,mv:['close-combat','flare-blitz','mach-punch','u-turn'],item:'life-orb',ability:'blaze',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ]]},
+    {name:'Lucian',title:'Maestro Psíquico',ts:'',arena:'ba-psychic',
+    teams:[[
+      {sp:'girafarig',lv:53,mv:['psychic','nasty-plot','thunderbolt','shadow-ball'],item:'life-orb',ability:'sap-sipper',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'medicham',lv:53,mv:['high-jump-kick','zen-headbutt','thunder-punch','ice-punch'],item:'choice-scarf',ability:'pure-power',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'bronzong',lv:54,mv:['stealth-rock','gyro-ball','trick-room','hypnosis'],item:'leftovers',ability:'levitate',evs:{hp:252,def:252,spd:4},nat:'sassy'},
+      {sp:'alakazam',lv:55,mv:['psychic','shadow-ball','focus-blast','recover'],item:'life-orb',ability:'magic-guard',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'espeon',lv:58,mv:['psychic','shadow-ball','calm-mind','baton-pass'],item:'leftovers',ability:'magic-bounce',evs:{spa:252,spe:252,hp:4},nat:'timid'}
+    ],[
+      {sp:'reuniclus',lv:53,mv:['calm-mind','psyshock','focus-blast','recover'],item:'life-orb',ability:'magic-guard',evs:{hp:252,spa:252,spd:4},nat:'bold'},
+      {sp:'gallade',lv:54,mv:['close-combat','zen-headbutt','swords-dance','ice-punch'],item:'lum-berry',ability:'steadfast',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'gardevoir',lv:54,mv:['moonblast','psychic','shadow-ball','calm-mind'],item:'choice-specs',ability:'trace',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'starmie',lv:55,mv:['hydro-pump','psychic','ice-beam','thunderbolt'],item:'life-orb',ability:'natural-cure',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'espeon',lv:58,mv:['psychic','shadow-ball','calm-mind','morning-sun'],item:'leftovers',ability:'magic-bounce',evs:{spa:252,spe:252,hp:4},nat:'timid'}
+    ]]},
+    {name:'Cynthia',title:'⭐ Campeón de Sinnoh',ts:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/trainers/cynthia.png',arena:'ba-dragon',
+    teams:[[
+      {sp:'spiritomb',lv:58,mv:['shadow-ball','dark-pulse','will-o-wisp','nasty-plot'],item:'leftovers',ability:'pressure',evs:{hp:252,spd:252,def:4},nat:'calm'},
+      {sp:'roserade',lv:58,mv:['leaf-storm','sludge-bomb','shadow-ball','sleep-powder'],item:'life-orb',ability:'natural-cure',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'togekiss',lv:60,mv:['air-slash','aura-sphere','roost','nasty-plot'],item:'leftovers',ability:'serene-grace',evs:{spa:252,hp:252,spd:4},nat:'timid'},
+      {sp:'lucario',lv:60,mv:['close-combat','extreme-speed','swords-dance','ice-punch'],item:'life-orb',ability:'inner-focus',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'milotic',lv:58,mv:['scald','ice-beam','dragon-pulse','recover'],item:'leftovers',ability:'marvel-scale',evs:{hp:252,def:252,spd:4},nat:'bold'},
+      {sp:'garchomp',lv:62,mv:['earthquake','dragon-claw','stone-edge','swords-dance'],item:'rocky-helmet',ability:'rough-skin',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ],[
+      {sp:'spiritomb',lv:58,mv:['shadow-ball','dark-pulse','will-o-wisp','nasty-plot'],item:'leftovers',ability:'pressure',evs:{hp:252,spd:252,def:4},nat:'calm'},
+      {sp:'togekiss',lv:59,mv:['air-slash','aura-sphere','thunder-wave','roost'],item:'leftovers',ability:'serene-grace',evs:{spa:252,hp:252,spd:4},nat:'timid'},
+      {sp:'lucario',lv:60,mv:['calm-mind','aura-sphere','flash-cannon','shadow-ball'],item:'life-orb',ability:'inner-focus',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'milotic',lv:60,mv:['scald','ice-beam','dragon-pulse','recover'],item:'leftovers',ability:'marvel-scale',evs:{hp:252,def:252,spd:4},nat:'bold'},
+      {sp:'roserade',lv:60,mv:['leaf-storm','sludge-bomb','shadow-ball','sleep-powder'],item:'life-orb',ability:'natural-cure',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'garchomp',lv:62,mv:['earthquake','outrage','stone-edge','dragon-dance'],item:'life-orb',ability:'rough-skin',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ]]}
+  ]},
+  unova:{name:'Unova',emoji:'⚫',order:4,members:[
+    {name:'Shauntal',title:'Maestra Fantasma',ts:'',arena:'ba-ghost',
+    teams:[[
+      {sp:'cofagrigus',lv:68,mv:['shadow-ball','will-o-wisp','nasty-plot','rest'],item:'leftovers',ability:'mummy',evs:{hp:252,def:252,spd:4},nat:'bold'},
+      {sp:'chandelure',lv:68,mv:['shadow-ball','flamethrower','energy-ball','trick'],item:'choice-scarf',ability:'flash-fire',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'golurk',lv:69,mv:['shadow-punch','earthquake','ice-punch','drain-punch'],item:'life-orb',ability:'no-guard',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'drifblim',lv:70,mv:['shadow-ball','thunderbolt','will-o-wisp','calm-mind'],item:'sitrus-berry',ability:'unburden',evs:{spa:252,hp:252,spd:4},nat:'timid'},
+      {sp:'jellicent',lv:72,mv:['scald','shadow-ball','will-o-wisp','recover'],item:'leftovers',ability:'water-absorb',evs:{hp:252,def:252,spd:4},nat:'bold'}
+    ],[
+      {sp:'aegislash',lv:68,mv:['shadow-ball','flash-cannon','kings-shield','sacred-sword'],item:'life-orb',ability:'stance-change',evs:{hp:252,spa:252,spd:4},nat:'quiet'},
+      {sp:'gengar',lv:69,mv:['shadow-ball','sludge-wave','focus-blast','destiny-bond'],item:'focus-sash',ability:'cursed-body',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'chandelure',lv:70,mv:['shadow-ball','flamethrower','energy-ball','will-o-wisp'],item:'choice-specs',ability:'flash-fire',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'mismagius',lv:70,mv:['shadow-ball','nasty-plot','thunderbolt','mystical-fire'],item:'life-orb',ability:'levitate',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'jellicent',lv:72,mv:['scald','shadow-ball','will-o-wisp','recover'],item:'leftovers',ability:'water-absorb',evs:{hp:252,def:252,spd:4},nat:'bold'}
+    ]]},
+    {name:'Grimsley',title:'Maestro Siniestro',ts:'',arena:'ba-dark',
+    teams:[[
+      {sp:'scrafty',lv:68,mv:['drain-punch','crunch','dragon-dance','ice-punch'],item:'lum-berry',ability:'moxie',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'krookodile',lv:69,mv:['earthquake','crunch','dragon-dance','stone-edge'],item:'lum-berry',ability:'moxie',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'honchkrow',lv:70,mv:['brave-bird','sucker-punch','superpower','roost'],item:'life-orb',ability:'moxie',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'bisharp',lv:72,mv:['sucker-punch','iron-head','knock-off','swords-dance'],item:'life-orb',ability:'defiant',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'hydreigon',lv:74,mv:['draco-meteor','dark-pulse','fire-blast','focus-blast'],item:'choice-scarf',ability:'levitate',evs:{spa:252,spe:252,hp:4},nat:'timid'}
+    ],[
+      {sp:'zoroark',lv:68,mv:['night-daze','flamethrower','focus-blast','nasty-plot'],item:'life-orb',ability:'illusion',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'weavile',lv:69,mv:['knock-off','ice-shard','icicle-crash','swords-dance'],item:'life-orb',ability:'pressure',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'mandibuzz',lv:70,mv:['foul-play','roost','whirlwind','toxic'],item:'leftovers',ability:'overcoat',evs:{hp:252,def:252,spd:4},nat:'bold'},
+      {sp:'bisharp',lv:72,mv:['sucker-punch','iron-head','knock-off','swords-dance'],item:'life-orb',ability:'defiant',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'hydreigon',lv:74,mv:['draco-meteor','dark-pulse','fire-blast','roost'],item:'choice-specs',ability:'levitate',evs:{spa:252,spe:252,hp:4},nat:'timid'}
+    ]]},
+    {name:'Caitlin',title:'Maestra Psíquica',ts:'',arena:'ba-psychic',
+    teams:[[
+      {sp:'musharna',lv:68,mv:['calm-mind','moonblast','psychic','baton-pass'],item:'leftovers',ability:'synchronize',evs:{hp:252,def:252,spd:4},nat:'bold'},
+      {sp:'reuniclus',lv:69,mv:['calm-mind','psyshock','focus-blast','recover'],item:'life-orb',ability:'magic-guard',evs:{hp:252,spa:252,spd:4},nat:'bold'},
+      {sp:'sigilyph',lv:70,mv:['air-slash','psychic','cosmic-power','stored-power'],item:'flame-orb',ability:'magic-guard',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'gothitelle',lv:72,mv:['calm-mind','psychic','thunderbolt','shadow-ball'],item:'choice-specs',ability:'shadow-tag',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'gardevoir',lv:74,mv:['moonblast','psychic','shadow-ball','focus-blast'],item:'choice-specs',ability:'trace',evs:{spa:252,spe:252,hp:4},nat:'timid'}
+    ],[
+      {sp:'alakazam',lv:68,mv:['psychic','shadow-ball','focus-blast','recover'],item:'life-orb',ability:'magic-guard',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'espeon',lv:69,mv:['psychic','shadow-ball','calm-mind','morning-sun'],item:'leftovers',ability:'magic-bounce',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'starmie',lv:70,mv:['hydro-pump','psychic','ice-beam','thunderbolt'],item:'life-orb',ability:'natural-cure',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'gardevoir',lv:72,mv:['moonblast','psychic','shadow-ball','calm-mind'],item:'leftovers',ability:'trace',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'reuniclus',lv:74,mv:['calm-mind','psyshock','focus-blast','recover'],item:'life-orb',ability:'magic-guard',evs:{hp:252,spa:252,spd:4},nat:'bold'}
+    ]]},
+    {name:'Marshal',title:'Maestro de Lucha',ts:'',arena:'ba-fighting',
+    teams:[[
+      {sp:'mienshao',lv:68,mv:['high-jump-kick','u-turn','stone-edge','fake-out'],item:'life-orb',ability:'reckless',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'conkeldurr',lv:69,mv:['drain-punch','mach-punch','ice-punch','thunder-punch'],item:'assault-vest',ability:'guts',evs:{hp:252,atk:252,spd:4},nat:'adamant'},
+      {sp:'lucario',lv:70,mv:['close-combat','extreme-speed','swords-dance','bullet-punch'],item:'life-orb',ability:'inner-focus',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'sawk',lv:72,mv:['close-combat','earthquake','ice-punch','stone-edge'],item:'choice-band',ability:'sturdy',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'infernape',lv:74,mv:['close-combat','flare-blitz','mach-punch','thunder-punch'],item:'life-orb',ability:'blaze',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ],[
+      {sp:'hawlucha',lv:68,mv:['high-jump-kick','acrobatics','swords-dance','stone-edge'],item:'focus-sash',ability:'unburden',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'blaziken',lv:69,mv:['close-combat','flare-blitz','high-jump-kick','swords-dance'],item:'life-orb',ability:'speed-boost',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'breloom',lv:70,mv:['spore','mach-punch','seed-bomb','swords-dance'],item:'life-orb',ability:'technician',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'mienshao',lv:72,mv:['high-jump-kick','u-turn','stone-edge','fake-out'],item:'choice-scarf',ability:'reckless',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'conkeldurr',lv:74,mv:['drain-punch','mach-punch','ice-punch','thunder-punch'],item:'life-orb',ability:'guts',evs:{hp:252,atk:252,spd:4},nat:'adamant'}
+    ]]},
+    {name:'Alder',title:'⭐ Campeón de Unova',ts:'',arena:'ba-default',
+    teams:[[
+      {sp:'volcarona',lv:72,mv:['quiver-dance','fire-blast','bug-buzz','giga-drain'],item:'life-orb',ability:'flame-body',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'conkeldurr',lv:72,mv:['drain-punch','mach-punch','ice-punch','thunder-punch'],item:'assault-vest',ability:'guts',evs:{hp:252,atk:252,spd:4},nat:'adamant'},
+      {sp:'bouffalant',lv:73,mv:['head-charge','earthquake','megahorn','poison-jab'],item:'choice-band',ability:'reckless',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'haxorus',lv:74,mv:['dragon-dance','outrage','earthquake','poison-jab'],item:'lum-berry',ability:'mold-breaker',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'escavalier',lv:74,mv:['iron-head','megahorn','drill-run','swords-dance'],item:'choice-band',ability:'swarm',evs:{hp:252,atk:252,spd:4},nat:'brave'},
+      {sp:'braviary',lv:76,mv:['brave-bird','superpower','close-combat','bulk-up'],item:'choice-scarf',ability:'sheer-force',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ],[
+      {sp:'volcarona',lv:72,mv:['quiver-dance','fire-blast','bug-buzz','morning-sun'],item:'sitrus-berry',ability:'flame-body',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'chandelure',lv:73,mv:['shadow-ball','fire-blast','energy-ball','trick'],item:'choice-scarf',ability:'flash-fire',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'krookodile',lv:74,mv:['earthquake','crunch','dragon-claw','dragon-dance'],item:'choice-scarf',ability:'moxie',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'haxorus',lv:74,mv:['dragon-dance','outrage','earthquake','swords-dance'],item:'lum-berry',ability:'mold-breaker',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'hydreigon',lv:75,mv:['draco-meteor','dark-pulse','fire-blast','focus-blast'],item:'choice-specs',ability:'levitate',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'archeops',lv:76,mv:['head-smash','acrobatics','earthquake','u-turn'],item:'flying-gem',ability:'defeatist',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ]]}
+  ]},
+  kalos:{name:'Kalos',emoji:'🌸',order:5,members:[
+    {name:'Malva',title:'Maestra Fuego',ts:'',arena:'ba-fire',
+    teams:[[
+      {sp:'pyroar',lv:72,mv:['fire-blast','dark-pulse','hyper-voice','flamethrower'],item:'choice-specs',ability:'unnerve',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'torkoal',lv:72,mv:['stealth-rock','lava-plume','yawn','rapid-spin'],item:'leftovers',ability:'drought',evs:{hp:252,def:252,spd:4},nat:'bold'},
+      {sp:'chandelure',lv:74,mv:['shadow-ball','flamethrower','energy-ball','trick'],item:'choice-scarf',ability:'flash-fire',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'houndoom',lv:73,mv:['fire-blast','dark-pulse','nasty-plot','will-o-wisp'],item:'life-orb',ability:'flash-fire',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'talonflame',lv:75,mv:['brave-bird','flare-blitz','swords-dance','roost'],item:'sharp-beak',ability:'gale-wings',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ],[
+      {sp:'arcanine',lv:72,mv:['flare-blitz','extreme-speed','close-combat','morning-sun'],item:'leftovers',ability:'intimidate',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'ninetales',lv:73,mv:['fire-blast','energy-ball','will-o-wisp','nasty-plot'],item:'life-orb',ability:'drought',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'charizard',lv:74,mv:['fire-blast','air-slash','dragon-pulse','focus-blast'],item:'choice-specs',ability:'blaze',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'magmortar',lv:74,mv:['fire-blast','thunderbolt','focus-blast','psychic'],item:'choice-scarf',ability:'vital-spirit',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'talonflame',lv:75,mv:['brave-bird','flare-blitz','swords-dance','roost'],item:'sharp-beak',ability:'gale-wings',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ]]},
+    {name:'Siebold',title:'Maestro Agua',ts:'',arena:'ba-water',
+    teams:[[
+      {sp:'clawitzer',lv:72,mv:['water-pulse','aura-sphere','dark-pulse','ice-beam'],item:'choice-specs',ability:'mega-launcher',evs:{spa:252,spe:252,hp:4},nat:'modest'},
+      {sp:'gyarados',lv:73,mv:['dragon-dance','waterfall','ice-fang','earthquake'],item:'lum-berry',ability:'intimidate',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'starmie',lv:74,mv:['hydro-pump','psychic','ice-beam','thunderbolt'],item:'life-orb',ability:'natural-cure',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'barbaracle',lv:74,mv:['shell-smash','cross-chop','stone-edge','razor-shell'],item:'white-herb',ability:'tough-claws',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'cloyster',lv:75,mv:['shell-smash','icicle-spear','rock-blast','ice-shard'],item:'focus-sash',ability:'skill-link',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ],[
+      {sp:'greninja',lv:72,mv:['hydro-pump','dark-pulse','ice-beam','u-turn'],item:'life-orb',ability:'torrent',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'milotic',lv:73,mv:['scald','ice-beam','dragon-pulse','recover'],item:'leftovers',ability:'marvel-scale',evs:{hp:252,def:252,spd:4},nat:'bold'},
+      {sp:'kingdra',lv:73,mv:['draco-meteor','surf','flash-cannon','ice-beam'],item:'choice-specs',ability:'swift-swim',evs:{spa:252,spe:252,hp:4},nat:'modest'},
+      {sp:'lapras',lv:74,mv:['freeze-dry','thunderbolt','hydro-pump','ice-beam'],item:'choice-specs',ability:'water-absorb',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'cloyster',lv:75,mv:['shell-smash','icicle-spear','rock-blast','ice-shard'],item:'focus-sash',ability:'skill-link',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ]]},
+    {name:'Wikstrom',title:'Maestro Acero',ts:'',arena:'ba-steel',
+    teams:[[
+      {sp:'klefki',lv:72,mv:['spikes','thunder-wave','swagger','play-rough'],item:'leftovers',ability:'prankster',evs:{hp:252,def:252,spd:4},nat:'bold'},
+      {sp:'probopass',lv:73,mv:['stealth-rock','power-gem','discharge','flash-cannon'],item:'leftovers',ability:'sturdy',evs:{hp:252,spa:4,spd:252},nat:'calm'},
+      {sp:'scizor',lv:74,mv:['bullet-punch','bug-bite','superpower','swords-dance'],item:'choice-band',ability:'technician',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'aegislash',lv:74,mv:['shadow-ball','flash-cannon','kings-shield','sacred-sword'],item:'life-orb',ability:'stance-change',evs:{hp:252,spa:252,spd:4},nat:'quiet'},
+      {sp:'skarmory',lv:75,mv:['stealth-rock','spikes','whirlwind','brave-bird'],item:'rocky-helmet',ability:'sturdy',evs:{hp:252,def:252,spd:4},nat:'impish'}
+    ],[
+      {sp:'metagross',lv:72,mv:['meteor-mash','earthquake','zen-headbutt','ice-punch'],item:'life-orb',ability:'clear-body',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'lucario',lv:73,mv:['close-combat','extreme-speed','bullet-punch','swords-dance'],item:'life-orb',ability:'steadfast',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'bisharp',lv:74,mv:['sucker-punch','iron-head','knock-off','swords-dance'],item:'life-orb',ability:'defiant',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'aegislash',lv:74,mv:['shadow-ball','flash-cannon','kings-shield','shadow-sneak'],item:'life-orb',ability:'stance-change',evs:{hp:252,atk:252,spd:4},nat:'brave'},
+      {sp:'skarmory',lv:75,mv:['stealth-rock','spikes','whirlwind','brave-bird'],item:'rocky-helmet',ability:'sturdy',evs:{hp:252,def:252,spd:4},nat:'impish'}
+    ]]},
+    {name:'Drasna',title:'Maestra Dragón',ts:'',arena:'ba-dragon',
+    teams:[[
+      {sp:'dragalge',lv:72,mv:['draco-meteor','sludge-wave','thunderbolt','toxic-spikes'],item:'choice-specs',ability:'adaptability',evs:{spa:252,spe:252,hp:4},nat:'modest'},
+      {sp:'altaria',lv:73,mv:['dragon-dance','dragon-claw','earthquake','roost'],item:'lum-berry',ability:'natural-cure',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'druddigon',lv:73,mv:['dragon-tail','glare','earthquake','fire-punch'],item:'rocky-helmet',ability:'rough-skin',evs:{hp:252,atk:4,def:252},nat:'careful'},
+      {sp:'noivern',lv:74,mv:['draco-meteor','hurricane','u-turn','flamethrower'],item:'choice-specs',ability:'frisk',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'garchomp',lv:76,mv:['earthquake','dragon-claw','stone-edge','swords-dance'],item:'rocky-helmet',ability:'rough-skin',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ],[
+      {sp:'dragonite',lv:72,mv:['dragon-dance','outrage','extreme-speed','fire-punch'],item:'lum-berry',ability:'multiscale',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'salamence',lv:73,mv:['dragon-dance','outrage','earthquake','fire-blast'],item:'lum-berry',ability:'intimidate',evs:{atk:252,spe:252,hp:4},nat:'naughty'},
+      {sp:'haxorus',lv:74,mv:['dragon-dance','outrage','earthquake','poison-jab'],item:'lum-berry',ability:'mold-breaker',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'flygon',lv:74,mv:['earthquake','dragon-claw','u-turn','fire-blast'],item:'choice-scarf',ability:'levitate',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'garchomp',lv:76,mv:['earthquake','dragon-claw','stone-edge','dragon-dance'],item:'life-orb',ability:'rough-skin',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ]]},
+    {name:'Diantha',title:'⭐ Campeón de Kalos',ts:'',arena:'ba-psychic',
+    teams:[[
+      {sp:'gourgeist',lv:74,mv:['will-o-wisp','leech-seed','phantom-force','synthesis'],item:'leftovers',ability:'frisk',evs:{hp:252,def:252,spd:4},nat:'impish'},
+      {sp:'tyrantrum',lv:75,mv:['dragon-dance','head-smash','earthquake','dragon-claw'],item:'lum-berry',ability:'rock-head',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'aurorus',lv:75,mv:['freeze-dry','earth-power','thunderbolt','stealth-rock'],item:'life-orb',ability:'refrigerate',evs:{spa:252,spe:252,hp:4},nat:'modest'},
+      {sp:'hawlucha',lv:76,mv:['swords-dance','high-jump-kick','acrobatics','stone-edge'],item:'flying-gem',ability:'unburden',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'goodra',lv:76,mv:['draco-meteor','fire-blast','thunderbolt','sludge-wave'],item:'assault-vest',ability:'sap-sipper',evs:{hp:252,spa:4,spd:252},nat:'modest'},
+      {sp:'gardevoir',lv:80,mv:['moonblast','psychic','shadow-ball','focus-blast'],item:'choice-specs',ability:'trace',evs:{spa:252,spe:252,hp:4},nat:'timid'}
+    ],[
+      {sp:'goodra',lv:74,mv:['draco-meteor','fire-blast','thunderbolt','sludge-wave'],item:'assault-vest',ability:'sap-sipper',evs:{hp:252,spa:4,spd:252},nat:'modest'},
+      {sp:'trevenant',lv:75,mv:['wood-hammer','shadow-claw','will-o-wisp','leech-seed'],item:'sitrus-berry',ability:'harvest',evs:{hp:252,atk:252,def:4},nat:'adamant'},
+      {sp:'tyrantrum',lv:75,mv:['dragon-dance','head-smash','earthquake','fire-fang'],item:'lum-berry',ability:'rock-head',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'florges',lv:76,mv:['moonblast','wish','calm-mind','protect'],item:'leftovers',ability:'flower-veil',evs:{hp:252,def:4,spd:252},nat:'calm'},
+      {sp:'aegislash',lv:77,mv:['shadow-ball','flash-cannon','kings-shield','sacred-sword'],item:'life-orb',ability:'stance-change',evs:{hp:252,spa:252,spd:4},nat:'quiet'},
+      {sp:'gardevoir',lv:80,mv:['moonblast','psychic','shadow-ball','calm-mind'],item:'leftovers',ability:'trace',evs:{spa:252,spe:252,hp:4},nat:'timid'}
+    ]]}
+  ]},
+  alola:{name:'Alola',emoji:'🌺',order:6,members:[
+    {name:'Hala',title:'Maestro de Lucha',ts:'',arena:'ba-fighting',
+    teams:[[
+      {sp:'crabominable',lv:76,mv:['ice-hammer','close-combat','earthquake','ice-shard'],item:'assault-vest',ability:'iron-fist',evs:{atk:252,hp:252,spd:4},nat:'adamant'},
+      {sp:'primeape',lv:76,mv:['close-combat','u-turn','ice-punch','stone-edge'],item:'choice-scarf',ability:'vital-spirit',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'poliwrath',lv:77,mv:['bulk-up','waterfall','dynamic-punch','ice-punch'],item:'leftovers',ability:'water-absorb',evs:{hp:252,atk:252,def:4},nat:'adamant'},
+      {sp:'bewear',lv:77,mv:['double-edge','close-combat','earthquake','ice-punch'],item:'choice-band',ability:'fluffy',evs:{atk:252,hp:252,spe:4},nat:'adamant'},
+      {sp:'hariyama',lv:79,mv:['close-combat','heavy-slam','knock-off','bullet-punch'],item:'flame-orb',ability:'guts',evs:{hp:252,atk:252,spd:4},nat:'adamant'}
+    ]]},
+    {name:'Olivia',title:'Maestra de Roca',ts:'',arena:'ba-ground',
+    teams:[[
+      {sp:'gigalith',lv:76,mv:['stone-edge','earthquake','heavy-slam','stealth-rock'],item:'rocky-helmet',ability:'sand-stream',evs:{hp:252,atk:252,def:4},nat:'adamant'},
+      {sp:'probopass',lv:76,mv:['stealth-rock','power-gem','flash-cannon','volt-switch'],item:'leftovers',ability:'sturdy',evs:{hp:252,spa:4,spd:252},nat:'calm'},
+      {sp:'lycanroc',lv:77,mv:['accelerock','stone-edge','close-combat','swords-dance'],item:'life-orb',ability:'tough-claws',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'carbink',lv:77,mv:['stealth-rock','power-gem','moonblast','reflect'],item:'leftovers',ability:'sturdy',evs:{hp:252,def:252,spd:4},nat:'calm'},
+      {sp:'tyranitar',lv:79,mv:['stone-edge','crunch','earthquake','dragon-dance'],item:'lum-berry',ability:'sand-stream',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ]]},
+    {name:'Acerola',title:'Maestra Fantasma',ts:'',arena:'ba-ghost',
+    teams:[[
+      {sp:'palossand',lv:76,mv:['shadow-ball','earth-power','shore-up','sludge-bomb'],item:'leftovers',ability:'water-compaction',evs:{hp:252,def:252,spa:4},nat:'bold'},
+      {sp:'drifblim',lv:76,mv:['shadow-ball','thunderbolt','will-o-wisp','calm-mind'],item:'sitrus-berry',ability:'unburden',evs:{spa:252,hp:252,spd:4},nat:'modest'},
+      {sp:'dhelmise',lv:77,mv:['power-whip','anchor-shot','earthquake','rapid-spin'],item:'assault-vest',ability:'steelworker',evs:{hp:252,atk:252,spd:4},nat:'brave'},
+      {sp:'froslass',lv:77,mv:['shadow-ball','ice-beam','spikes','destiny-bond'],item:'focus-sash',ability:'cursed-body',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'mimikyu',lv:79,mv:['play-rough','shadow-claw','shadow-sneak','swords-dance'],item:'life-orb',ability:'disguise',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ]]},
+    {name:'Kahili',title:'Maestra Voladora',ts:'',arena:'ba-default',
+    teams:[[
+      {sp:'toucannon',lv:76,mv:['beak-blast','bullet-seed','flame-charge','rock-blast'],item:'choice-band',ability:'skill-link',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'mandibuzz',lv:76,mv:['foul-play','air-slash','roost','toxic'],item:'leftovers',ability:'overcoat',evs:{hp:252,def:252,spd:4},nat:'bold'},
+      {sp:'crobat',lv:77,mv:['brave-bird','cross-poison','roost','u-turn'],item:'black-sludge',ability:'infiltrator',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'oricorio',lv:77,mv:['revelation-dance','air-slash','hurricane','roost'],item:'choice-specs',ability:'dancer',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'skarmory',lv:79,mv:['brave-bird','stealth-rock','spikes','roost'],item:'rocky-helmet',ability:'sturdy',evs:{hp:252,def:252,spd:4},nat:'impish'}
+    ]]},
+    {name:'Kukui',title:'⭐ Campeón de Alola',ts:'',arena:'ba-default',
+    teams:[[
+      {sp:'lycanroc',lv:80,mv:['accelerock','stone-edge','close-combat','swords-dance'],item:'life-orb',ability:'tough-claws',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'ninetales',lv:80,mv:['flamethrower','energy-ball','nasty-plot','will-o-wisp'],item:'life-orb',ability:'drought',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'magnezone',lv:80,mv:['thunderbolt','flash-cannon','volt-switch','thunder-wave'],item:'choice-specs',ability:'magnet-pull',evs:{spa:252,spe:252,hp:4},nat:'modest'},
+      {sp:'snorlax',lv:81,mv:['body-slam','earthquake','crunch','curse'],item:'leftovers',ability:'thick-fat',evs:{hp:252,atk:252,def:4},nat:'adamant'},
+      {sp:'braviary',lv:81,mv:['brave-bird','close-combat','superpower','roost'],item:'choice-scarf',ability:'sheer-force',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'primarina',lv:84,mv:['moonblast','hydro-pump','psychic','calm-mind'],item:'choice-specs',ability:'torrent',evs:{spa:252,spe:252,hp:4},nat:'modest'}
+    ]]}
+  ]},
+  galar:{name:'Galar',emoji:'⚔️',order:7,members:[
+    {name:'Bea',title:'Maestra de Lucha',ts:'',arena:'ba-fighting',
+    teams:[[
+      {sp:'hawlucha',lv:78,mv:['close-combat','acrobatics','swords-dance','stone-edge'],item:'focus-sash',ability:'unburden',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'grapploct',lv:78,mv:['octolock','close-combat','liquidation','ice-punch'],item:'leftovers',ability:'technician',evs:{hp:252,atk:252,def:4},nat:'adamant'},
+      {sp:'sirfetchd',lv:79,mv:['close-combat','knock-off','first-impression','swords-dance'],item:'life-orb',ability:'scrappy',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'falinks',lv:79,mv:['close-combat','iron-head','rock-slide','no-retreat'],item:'lum-berry',ability:'defiant',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'machamp',lv:81,mv:['close-combat','bullet-punch','stone-edge','knock-off'],item:'choice-band',ability:'guts',evs:{atk:252,hp:252,spe:4},nat:'adamant'}
+    ]]},
+    {name:'Allister',title:'Maestro Fantasma',ts:'',arena:'ba-ghost',
+    teams:[[
+      {sp:'cursola',lv:78,mv:['shadow-ball','power-gem','strength-sap','calm-mind'],item:'eviolite',ability:'perish-body',evs:{hp:252,spa:252,spd:4},nat:'modest'},
+      {sp:'polteageist',lv:78,mv:['shell-smash','shadow-ball','stored-power','giga-drain'],item:'white-herb',ability:'cursed-body',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'chandelure',lv:79,mv:['shadow-ball','flamethrower','energy-ball','trick'],item:'choice-scarf',ability:'flash-fire',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'dusknoir',lv:79,mv:['shadow-punch','earthquake','ice-punch','will-o-wisp'],item:'leftovers',ability:'pressure',evs:{hp:252,atk:252,def:4},nat:'adamant'},
+      {sp:'gengar',lv:81,mv:['shadow-ball','sludge-wave','focus-blast','nasty-plot'],item:'life-orb',ability:'cursed-body',evs:{spa:252,spe:252,hp:4},nat:'timid'}
+    ]]},
+    {name:'Nessa',title:'Maestra de Agua',ts:'',arena:'ba-water',
+    teams:[[
+      {sp:'barraskewda',lv:78,mv:['liquidation','close-combat','psychic-fangs','aqua-jet'],item:'choice-band',ability:'swift-swim',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'pelipper',lv:78,mv:['hurricane','hydro-pump','u-turn','roost'],item:'damp-rock',ability:'drizzle',evs:{spa:252,hp:252,spd:4},nat:'modest'},
+      {sp:'toxapex',lv:79,mv:['scald','toxic','recover','haze'],item:'black-sludge',ability:'regenerator',evs:{hp:252,def:252,spd:4},nat:'bold'},
+      {sp:'golisopod',lv:79,mv:['first-impression','liquidation','close-combat','aqua-jet'],item:'choice-band',ability:'emergency-exit',evs:{atk:252,hp:252,spe:4},nat:'adamant'},
+      {sp:'drednaw',lv:81,mv:['liquidation','stone-edge','earthquake','swords-dance'],item:'life-orb',ability:'swift-swim',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ]]},
+    {name:'Raihan',title:'Maestro Dragón',ts:'',arena:'ba-dragon',
+    teams:[[
+      {sp:'gigalith',lv:78,mv:['stone-edge','earthquake','heavy-slam','stealth-rock'],item:'rocky-helmet',ability:'sand-stream',evs:{hp:252,atk:252,def:4},nat:'adamant'},
+      {sp:'flygon',lv:78,mv:['earthquake','dragon-claw','u-turn','fire-punch'],item:'choice-scarf',ability:'levitate',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'turtonator',lv:79,mv:['flamethrower','dragon-pulse','shell-smash','earth-power'],item:'white-herb',ability:'shell-armor',evs:{spa:252,spe:252,hp:4},nat:'modest'},
+      {sp:'goodra',lv:79,mv:['draco-meteor','fire-blast','thunderbolt','sludge-wave'],item:'assault-vest',ability:'sap-sipper',evs:{hp:252,spa:252,spd:4},nat:'modest'},
+      {sp:'duraludon',lv:81,mv:['draco-meteor','flash-cannon','thunderbolt','dragon-pulse'],item:'choice-specs',ability:'light-metal',evs:{spa:252,spe:252,hp:4},nat:'timid'}
+    ]]},
+    {name:'Leon',title:'⭐ Campeón de Galar',ts:'',arena:'ba-default',
+    teams:[[
+      {sp:'aegislash',lv:82,mv:['shadow-ball','flash-cannon','kings-shield','sacred-sword'],item:'life-orb',ability:'stance-change',evs:{hp:252,spa:252,spd:4},nat:'quiet'},
+      {sp:'dragapult',lv:82,mv:['dragon-darts','shadow-ball','u-turn','fire-blast'],item:'choice-specs',ability:'infiltrator',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'haxorus',lv:82,mv:['dragon-dance','outrage','earthquake','poison-jab'],item:'lum-berry',ability:'mold-breaker',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'seismitoad',lv:83,mv:['earth-power','sludge-wave','scald','stealth-rock'],item:'leftovers',ability:'water-absorb',evs:{hp:252,spa:252,spd:4},nat:'modest'},
+      {sp:'rhyperior',lv:83,mv:['earthquake','stone-edge','megahorn','ice-punch'],item:'assault-vest',ability:'solid-rock',evs:{hp:252,atk:252,spd:4},nat:'adamant'},
+      {sp:'charizard',lv:86,mv:['fire-blast','air-slash','dragon-pulse','focus-blast'],item:'choice-specs',ability:'blaze',evs:{spa:252,spe:252,hp:4},nat:'timid'}
+    ]]}
+  ]},
+  paldea:{name:'Paldea',emoji:'🟣',order:8,members:[
+    {name:'Rika',title:'Maestra de Tierra',ts:'',arena:'ba-ground',
+    teams:[[
+      {sp:'dugtrio',lv:80,mv:['earthquake','stone-edge','sucker-punch','rock-slide'],item:'focus-sash',ability:'arena-trap',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'donphan',lv:80,mv:['earthquake','stone-edge','knock-off','rapid-spin'],item:'assault-vest',ability:'sturdy',evs:{hp:252,atk:252,def:4},nat:'adamant'},
+      {sp:'camerupt',lv:81,mv:['earth-power','fire-blast','stealth-rock','lava-plume'],item:'leftovers',ability:'solid-rock',evs:{hp:252,spa:252,spd:4},nat:'modest'},
+      {sp:'whiscash',lv:81,mv:['earthquake','waterfall','dragon-dance','stone-edge'],item:'life-orb',ability:'oblivious',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'clodsire',lv:83,mv:['earthquake','toxic','recover','stealth-rock'],item:'black-sludge',ability:'unaware',evs:{hp:252,def:252,spd:4},nat:'careful'}
+    ]]},
+    {name:'Poppy',title:'Maestra de Acero',ts:'',arena:'ba-steel',
+    teams:[[
+      {sp:'bronzong',lv:80,mv:['gyro-ball','earthquake','stealth-rock','toxic'],item:'leftovers',ability:'levitate',evs:{hp:252,def:252,spd:4},nat:'sassy'},
+      {sp:'corviknight',lv:80,mv:['brave-bird','body-press','roost','u-turn'],item:'rocky-helmet',ability:'mirror-armor',evs:{hp:252,def:252,spd:4},nat:'impish'},
+      {sp:'magnezone',lv:81,mv:['thunderbolt','flash-cannon','volt-switch','thunder-wave'],item:'choice-specs',ability:'magnet-pull',evs:{spa:252,spe:252,hp:4},nat:'modest'},
+      {sp:'copperajah',lv:81,mv:['heavy-slam','earthquake','play-rough','superpower'],item:'assault-vest',ability:'sheer-force',evs:{hp:252,atk:252,spd:4},nat:'adamant'},
+      {sp:'tinkaton',lv:83,mv:['gigaton-hammer','play-rough','knock-off','swords-dance'],item:'life-orb',ability:'mold-breaker',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ]]},
+    {name:'Larry',title:'Maestro Volador',ts:'',arena:'ba-default',
+    teams:[[
+      {sp:'staraptor',lv:80,mv:['brave-bird','close-combat','double-edge','u-turn'],item:'choice-band',ability:'reckless',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'altaria',lv:80,mv:['dragon-dance','dragon-claw','earthquake','roost'],item:'lum-berry',ability:'natural-cure',evs:{atk:252,spe:252,hp:4},nat:'adamant'},
+      {sp:'tropius',lv:81,mv:['air-slash','giga-drain','leaf-storm','roost'],item:'leftovers',ability:'harvest',evs:{hp:252,spa:252,spd:4},nat:'modest'},
+      {sp:'oricorio',lv:81,mv:['revelation-dance','air-slash','hurricane','roost'],item:'choice-specs',ability:'dancer',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'flamigo',lv:83,mv:['brave-bird','close-combat','u-turn','swords-dance'],item:'life-orb',ability:'scrappy',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ]]},
+    {name:'Hassel',title:'Maestro Dragón',ts:'',arena:'ba-dragon',
+    teams:[[
+      {sp:'noivern',lv:80,mv:['draco-meteor','hurricane','flamethrower','u-turn'],item:'choice-specs',ability:'infiltrator',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'dragalge',lv:80,mv:['draco-meteor','sludge-wave','thunderbolt','toxic-spikes'],item:'black-sludge',ability:'adaptability',evs:{hp:252,spa:252,spd:4},nat:'modest'},
+      {sp:'flapple',lv:81,mv:['grav-apple','dragon-rush','u-turn','outrage'],item:'choice-band',ability:'hustle',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'haxorus',lv:81,mv:['dragon-dance','outrage','earthquake','poison-jab'],item:'lum-berry',ability:'mold-breaker',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'baxcalibur',lv:83,mv:['glaive-rush','icicle-crash','earthquake','dragon-dance'],item:'life-orb',ability:'thermal-exchange',evs:{atk:252,spe:252,hp:4},nat:'jolly'}
+    ]]},
+    {name:'Geeta',title:'⭐ Campeona de Paldea',ts:'',arena:'ba-psychic',
+    teams:[[
+      {sp:'glimmora',lv:84,mv:['power-gem','sludge-wave','earth-power','stealth-rock'],item:'focus-sash',ability:'toxic-debris',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'espathra',lv:84,mv:['calm-mind','stored-power','dazzling-gleam','roost'],item:'leftovers',ability:'speed-boost',evs:{spa:252,spe:252,hp:4},nat:'timid'},
+      {sp:'gogoat',lv:84,mv:['horn-leech','earthquake','bulk-up','rock-slide'],item:'sitrus-berry',ability:'sap-sipper',evs:{hp:252,atk:252,def:4},nat:'adamant'},
+      {sp:'veluza',lv:85,mv:['aqua-cutter','psycho-cut','crunch','swords-dance'],item:'life-orb',ability:'sharpness',evs:{atk:252,spe:252,hp:4},nat:'jolly'},
+      {sp:'avalugg',lv:85,mv:['avalanche','body-press','recover','rapid-spin'],item:'rocky-helmet',ability:'sturdy',evs:{hp:252,def:252,atk:4},nat:'impish'},
+      {sp:'kingambit',lv:88,mv:['kowtow-cleave','iron-head','sucker-punch','swords-dance'],item:'leftovers',ability:'supreme-overlord',evs:{atk:252,spe:252,hp:4},nat:'adamant'}
+    ]]}
+  ]}
+};
+
+// ═══════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════
+const TYPECHART={normal:{ghost:0,rock:.5,steel:.5},fire:{fire:.5,water:.5,rock:.5,dragon:.5,grass:2,ice:2,bug:2,steel:2},water:{water:.5,grass:.5,dragon:.5,fire:2,rock:2,ground:2},electric:{electric:.5,grass:.5,dragon:.5,ground:0,flying:2,water:2},grass:{fire:.5,grass:.5,poison:.5,flying:.5,bug:.5,steel:.5,dragon:.5,water:2,rock:2,ground:2},ice:{water:.5,ice:.5,fire:2,fighting:2,rock:2,steel:2,grass:2,dragon:2,ground:2,flying:2},fighting:{ghost:0,poison:.5,bug:.5,psychic:.5,flying:.5,dark:2,ice:2,normal:2,rock:2,steel:2},poison:{ground:0,poison:.5,rock:.5,ghost:.5,steel:0,grass:2,fairy:2},ground:{flying:0,electric:0,grass:.5,bug:.5,fire:2,poison:2,rock:2,steel:2},flying:{electric:.5,rock:.5,steel:.5,fighting:2,bug:2,grass:2},psychic:{dark:0,steel:.5,psychic:.5,fighting:2,poison:2},bug:{fire:.5,fighting:.5,flying:.5,ghost:.5,steel:.5,fairy:.5,poison:.5,grass:2,psychic:2,dark:2},rock:{fighting:.5,ground:.5,steel:.5,fire:2,ice:2,flying:2,bug:2},ghost:{normal:0,dark:.5,fighting:0,ghost:2,psychic:2},dragon:{steel:.5,fairy:0,dragon:2,ice:2},dark:{dark:.5,fairy:.5,fighting:2,bug:2,ghost:2},steel:{fire:.5,water:.5,electric:.5,steel:.5,ice:2,rock:2,fairy:2},fairy:{fire:.5,poison:.5,steel:.5,fighting:2,dragon:2,dark:2}};
+const NATURES={hardy:{},adamant:{atk:1.1,spa:.9},modest:{spa:1.1,atk:.9},jolly:{spe:1.1,spa:.9},timid:{spe:1.1,atk:.9},bold:{def:1.1,atk:.9},impish:{def:1.1,spa:.9},calm:{spd:1.1,atk:.9},careful:{spd:1.1,spa:.9},hasty:{spe:1.1,def:.9},naive:{spe:1.1,spd:.9},lonely:{atk:1.1,def:.9},brave:{atk:1.1,spe:.9},naughty:{atk:1.1,spd:.9},rash:{spa:1.1,spd:.9},quiet:{spa:1.1,spe:.9},mild:{spa:1.1,def:.9},gentle:{spd:1.1,def:.9},sassy:{spd:1.1,spe:.9},lax:{def:1.1,spd:.9},relaxed:{def:1.1,spe:.9},serious:{},bashful:{},docile:{},quirky:{}};
+const ITEMS={'choice-band':{atkM:1.5,choice:'atk'},'choice-specs':{spaM:1.5,choice:'spa'},'choice-scarf':{speM:1.5,choice:'spe'},'life-orb':{dmgM:1.3,recoil:.1},'leftovers':{eot:.0625},'black-sludge':{eot:.0625},'rocky-helmet':{contact:.167},'focus-sash':{sash:true},'lum-berry':{lum:true},'sitrus-berry':{sitrus:.25},'eviolite':{defM:1.5,spdM:1.5},'expert-belt':{expertBelt:true},'air-balloon':{immune:['ground']},'white-herb':{whiteHerb:true},'assault-vest':{spdM:1.5,noStatus:true},'flame-orb':{flameBurn:true},'toxic-orb':{toxicPoison:true},'sharp-beak':{dmgM:1.2,typeM:'flying'},'flying-gem':{dmgM:1.5,typeM:'flying',consumable:true},'damp-rock':{}};
+const TCOLORS={normal:'#A8A878',fire:'#F08030',water:'#6890F0',electric:'#F8D030',grass:'#78C850',ice:'#98D8D8',fighting:'#C03028',poison:'#A040A0',ground:'#E0C068',flying:'#A890F0',psychic:'#F85888',bug:'#A8B820',rock:'#B8A038',ghost:'#705898',dragon:'#7038F8',dark:'#705848',steel:'#B8B8D0',fairy:'#EE99AC'};
+const BOOST_MOVES={'dragon-dance':{atk:1,spe:1},'swords-dance':{atk:2},'nasty-plot':{spa:2},'calm-mind':{spa:1,spd:1},'bulk-up':{atk:1,def:1},'agility':{spe:2},'amnesia':{spd:2},'quiver-dance':{spa:1,spd:1,spe:1},'coil':{atk:1,def:1},'growth':{atk:1,spa:1},'cosmic-power':{def:1,spd:1},'iron-defense':{def:2},'stored-power':{spa:2},'shell-smash':{atk:2,spa:2,spe:2,def:-1,spd:-1},'baton-pass':{_transfer:true}};
+const HEAL_MOVES=['recover','roost','moonlight','morning-sun','synthesis','slack-off','softboiled','heal-order','aqua-ring','wish','rest','moonblast'];
+const WEATHER_MOVES={'sunny-day':{w:'sun',msg:'☀ ¡El sol brilla!'},'rain-dance':{w:'rain',msg:'🌧 ¡Lluvia!'},'sandstorm':{w:'sand',msg:'🌪 ¡Tormenta de arena!'},'hail':{w:'hail',msg:'❄ ¡Granizo!'}};
+const PRIORITY_MOVES={'quick-attack':1,'extreme-speed':2,'mach-punch':1,'bullet-punch':1,'ice-shard':1,'aqua-jet':1,'shadow-sneak':1,'vacuum-wave':1,'fake-out':3,'sucker-punch':1,'water-shuriken':1};
+const SELF_DROP_MOVES={'close-combat':{def:-1,spd:-1},'superpower':{atk:-1,def:-1},'draco-meteor':{spa:-2},'leaf-storm':{spa:-2},'overheat':{spa:-2},'psycho-boost':{spa:-2},'v-create':{def:-1,spd:-1,spe:-1},'head-smash':{hp_recoil:.5},'night-daze':{},'brave-bird':{hp_recoil:.33},'flare-blitz':{hp_recoil:.33},'wild-charge':{hp_recoil:.25},'double-edge':{hp_recoil:.33}};
+const ABILITIES_IMM={'levitate':['ground'],'flash-fire':['fire'],'water-absorb':['water'],'volt-absorb':['electric'],'lightning-rod':['electric'],'storm-drain':['water'],'sap-sipper':['grass'],'motor-drive':['electric'],'well-baked-body':['fire']};
+
+// Retratos oficiales de entrenadores (WikiDex). Se usan como fallback si no subes tu propio nombre_region.png
+const W='https://images.wikidexcdn.net/mwuploads/wikidex/thumb/';
+const TRAINER_IMG={
+  'kanto:Lorelei':W+'8/8f/latest/20190812031102/VS_Lorelei_Masters.png/110px-VS_Lorelei_Masters.png',
+  'kanto:Bruno':W+'5/58/latest/20190812165854/VS_Bruno_del_Alto_Mando_Masters.png/110px-VS_Bruno_del_Alto_Mando_Masters.png',
+  'kanto:Agatha':W+'3/3c/latest/20190812162220/VS_Agatha_Masters.png/110px-VS_Agatha_Masters.png',
+  'kanto:Lance':W+'1/10/latest/20191223182853/VS_Lance_Masters.png/110px-VS_Lance_Masters.png',
+  'kanto:Blue':W+'0/0f/latest/20230923192217/Azul_en_RFVH.png/124px-Azul_en_RFVH.png',
+  'johto:Will':W+'5/59/latest/20190812173137/VS_Mento_Masters.png/110px-VS_Mento_Masters.png',
+  'johto:Koga':W+'4/46/latest/20190812173138/VS_Koga_Masters.png/110px-VS_Koga_Masters.png',
+  'johto:Bruno':W+'5/58/latest/20190812165854/VS_Bruno_del_Alto_Mando_Masters.png/110px-VS_Bruno_del_Alto_Mando_Masters.png',
+  'johto:Karen':W+'1/10/latest/20190812162220/VS_Karen_Masters.png/110px-VS_Karen_Masters.png',
+  'johto:Lance':W+'1/10/latest/20191223182853/VS_Lance_Masters.png/110px-VS_Lance_Masters.png',
+  'hoenn:Sidney':W+'4/4c/latest/20210728082028/VS_Sixto_Masters.png/110px-VS_Sixto_Masters.png',
+  'hoenn:Phoebe':W+'6/67/latest/20190812162218/VS_F%C3%A1tima_Masters.png/110px-VS_F%C3%A1tima_Masters.png',
+  'hoenn:Glacia':W+'3/3d/latest/20191029010658/VS_N%C3%ADvea_Masters.png/110px-VS_N%C3%ADvea_Masters.png',
+  'hoenn:Drake':W+'1/1a/latest/20190812165850/VS_Drac%C3%B3n_Masters.png/110px-VS_Drac%C3%B3n_Masters.png',
+  'hoenn:Steven':W+'9/9d/latest/20220326175257/M%C3%A1ximo_Pe%C3%B1as_ROZA.png/120px-M%C3%A1ximo_Pe%C3%B1as_ROZA.png',
+  'sinnoh:Aaron':W+'1/11/latest/20220427084700/VS_Alecr%C3%A1n_Masters.png/110px-VS_Alecr%C3%A1n_Masters.png',
+  'sinnoh:Bertha':W+'1/16/latest/20220427084945/VS_Gaia_Masters.png/110px-VS_Gaia_Masters.png',
+  'sinnoh:Flint':W+'9/96/latest/20190812165851/VS_Fausto_Masters.png/110px-VS_Fausto_Masters.png',
+  'sinnoh:Lucian':W+'7/79/latest/20220427085124/VS_Delos_Masters.png/110px-VS_Delos_Masters.png',
+  'sinnoh:Cynthia':W+'f/f2/latest/20220426191412/Cintia.png/108px-Cintia.png',
+  'unova:Shauntal':W+'a/ae/latest/20190812022609/VS_An%C3%ADs_Masters.png/110px-VS_An%C3%ADs_Masters.png',
+  'unova:Grimsley':W+'6/62/latest/20190812173137/VS_Aza_Masters.png/110px-VS_Aza_Masters.png',
+  'unova:Caitlin':W+'f/f0/latest/20191029010243/VS_Catleya_Masters.png/110px-VS_Catleya_Masters.png',
+  'unova:Marshal':W+'7/77/latest/20190812173555/VS_Lotto_Masters.png/110px-VS_Lotto_Masters.png',
+  'unova:Alder':W+'a/ac/latest/20220423035220/Mirto.png/137px-Mirto.png',
+  'kalos:Malva':W+'3/35/latest/20221226084516/VS_Malva_Masters.png/110px-VS_Malva_Masters.png',
+  'kalos:Siebold':W+'1/17/latest/20190812165850/VS_Narciso_Masters.png/110px-VS_Narciso_Masters.png',
+  'kalos:Wikstrom':W+'5/5b/latest/20190812173138/VS_Tileo_Masters.png/110px-VS_Tileo_Masters.png',
+  'kalos:Drasna':W+'2/21/latest/20230127094107/VS_Dr%C3%A1cena_Masters.png/110px-VS_Dr%C3%A1cena_Masters.png',
+  'kalos:Diantha':W+'4/40/latest/20220315194115/Dianta.png/125px-Dianta.png',
+  'alola:Hala':W+'e/e6/latest/20210527174703/VS_Kaudan_Masters.png/110px-VS_Kaudan_Masters.png',
+  'alola:Olivia':W+'2/2c/latest/20190812162219/VS_Mayla_Masters.png/110px-VS_Mayla_Masters.png',
+  'alola:Acerola':W+'9/94/latest/20190812131013/VS_Zarala_Masters.png/110px-VS_Zarala_Masters.png',
+  'alola:Kahili':W+'5/56/latest/20190812162219/VS_Kahili_Masters.png/110px-VS_Kahili_Masters.png',
+  'galar:Leon':W+'b/be/latest/20220314191026/Lionel.png/168px-Lionel.png',
+  'paldea:Rika':W+'d/da/latest/20240424183156/VS_Cayena_Masters.png/110px-VS_Cayena_Masters.png',
+  'paldea:Poppy':W+'b/ba/latest/20240424183225/VS_Pola_Masters.png/110px-VS_Pola_Masters.png',
+  'paldea:Larry':W+'a/af/latest/20260214182111/VS_Laureano_%28Alto_Mando%29_Masters.png/110px-VS_Laureano_%28Alto_Mando%29_Masters.png',
+  'paldea:Hassel':W+'7/7e/latest/20251227180218/VS_Hesperio_Masters.png/110px-VS_Hesperio_Masters.png',
+  'paldea:Geeta':W+'a/a3/latest/20220907134756/S%C3%A1gita.png/119px-S%C3%A1gita.png'
+};
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let G={playerTeam:[],bp:0,items:{revive:0,maxpotion:0,fullrestore:0,pprestore:0},progress:{},completed:{}};
+let B=null;
+let C={};
+const SAVE_KEY='poke_elite_v2';
+// Ritmo del combate (ms) — más alto = más pausado y por turnos
+const TURN_DELAY=1000;   // pausa entre el ataque tuyo y el del rival
+const HIT_DELAY=750;     // pausa tras conectar un golpe
+const FAINT_DELAY=950;   // pausa al debilitar
+
+// ═══════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════
+const $=id=>document.getElementById(id);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const cap=s=>s?s[0].toUpperCase()+s.slice(1):s;
+const fmtMv=m=>m.split('-').map(cap).join(' ');
+
+function goTo(id){
+  if(id==='team'&&G.runLocked){id='hub';}
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $('screen-'+id).classList.add('active');
+  // Botón INICIO: visible en todas las pantallas menos la portada
+  const hb=$('btn-home');if(hb) hb.style.display=(id==='title')?'none':'block';
+  if(id==='hub') renderHub();
+}
+function goHome(){
+  if(B&&document.getElementById('screen-battle').classList.contains('active')){
+    modal('Volver al inicio','Si sales ahora perderás el combate actual. ¿Seguro?',
+      [{text:'Sí, salir',cls:'btn-secondary',fn:()=>{B=null;goTo('title');}},{text:'Cancelar',fn:()=>{}}]);
+    return;
+  }
+  goTo('title');
+}
+function blogLine(msg,cls=''){
+  const el=$('battle-log');
+  const d=document.createElement('div');d.className='ll-'+cls;d.textContent=msg;
+  el.appendChild(d);el.scrollTop=el.scrollHeight;
+}
+function modal(title,body,btns){
+  $('modal-title').textContent=title;$('modal-body').innerHTML=body;
+  const c=$('modal-btns');c.innerHTML='';
+  btns.forEach(b=>{
+    const el=document.createElement('button');
+    el.className=b.cls||'btn-primary';el.textContent=b.text;
+    el.onclick=()=>{$('modal-overlay').classList.remove('active');b.fn();};
+    c.appendChild(el);
+  });
+  $('modal-overlay').classList.add('active');
+}
+function showSaveToast(){
+  const t=document.createElement('div');t.className='save-toast';t.textContent='💾 GUARDADO';
+  document.body.appendChild(t);setTimeout(()=>t.remove(),2500);
+}
+function showDmgFloat(dmg,isEnemy,type='dmg'){
+  const el=document.createElement('div');
+  el.className='dmg-float'+(type==='heal'?' heal':type==='super'?' super-eff':type==='miss'?' miss':'');
+  const text=type==='miss'?'¡FALLO!':type==='heal'?'+'+dmg:'-'+dmg;
+  el.textContent=text;
+  const arena=$('battle-arena');
+  if(isEnemy){el.style.right='120px';el.style.top='100px';}
+  else{el.style.left='110px';el.style.bottom='80px';}
+  arena.appendChild(el);
+  setTimeout(()=>el.remove(),950);
+}
+
+// ═══════════════════════════════════════════
+// SAVE / LOAD
+// ═══════════════════════════════════════════
+function saveGame(){
+  try{
+    localStorage.setItem(SAVE_KEY,JSON.stringify({bp:G.bp,items:G.items,progress:G.progress,completed:G.completed,playerSkin:G.playerSkin||'trainer1.png',teamText:$('paste-input')?.value||'',difficulty:G.difficulty||null,runLocked:!!G.runLocked,playerTeamSnap:G.runLocked?G.playerTeam:null,v:2,ts:Date.now()}));
+    showSaveToast();
+  }catch(e){}
+}
+function loadGame(){
+  try{
+    const d=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
+    if(!d||d.v!==2) return false;
+    G.bp=d.bp||0;G.items=Object.assign({revive:0,maxpotion:0,fullrestore:0,pprestore:0},d.items||{});
+    G.progress=d.progress||{};G.completed=d.completed||{};
+    G.playerSkin=d.playerSkin||'trainer1.png';
+    G.difficulty=d.difficulty||null;
+    G.runLocked=!!d.runLocked;
+    G.playerTeamSnap=d.playerTeamSnap||null;
+    if(d.teamText&&$('paste-input'))$('paste-input').value=d.teamText;
+    return true;
+  }catch(e){return false;}
+}
+
+// ═══════════════════════════════════════════
+// POKEAPI
+// ═══════════════════════════════════════════
+async function apiPoke(name){
+  let n=name.toLowerCase().replace(/\s*\([mf]\)\s*$/i,'').replace(/\s*\([^)]*\)\s*/g,' ').trim().replace(/\s+/g,'-').replace(/[^a-z0-9\-]/g,'').replace(/-+/g,'-').replace(/^-|-$/g,'');
+  n=n.replace(/-mega(-[xy])?$/,'').replace(/^mega-/,'').replace(/-alolan?$/,'').replace(/^alolan-/,'').replace(/-galarian?$/,'').replace(/^galarian-/,'').replace(/-hisuian?$/,'').replace(/^hisuian-/,'');
+  const key='pk_'+n;if(C[key]) return C[key];
+  try{const r=await fetch('https://pokeapi.co/api/v2/pokemon/'+n);if(!r.ok)throw 0;const d=await r.json();C[key]=d;return d;}catch(e){return null;}
+}
+async function apiMove(name){
+  const key='mv_'+name;if(C[key]) return C[key];
+  try{const r=await fetch('https://pokeapi.co/api/v2/move/'+name);if(!r.ok)return null;const d=await r.json();C[key]=d;return d;}catch(e){return null;}
+}
+function spriteHome(id){return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/${id}.png`;}
+function spriteDefault(id){return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;}
+function spriteBack(id){return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${id}.png`;}
+// Sprite LOCAL del entrenador: archivo nombre_region.png que el usuario sube (ej: blue_kanto.png)
+function trainerLocalSprite(name,region){
+  return `./${name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'')}_${region}.png`;
+}
+// Asigna a un <img> el sprite del entrenador con cascada de fallbacks:
+// 1) tu archivo local nombre_region.png  2) retrato oficial WikiDex  3) sprite del Pokémon líder
+function setTrainerSprite(imgEl,opp,region,teamIdx){
+  const chain=[trainerLocalSprite(opp.name,region)];
+  const wiki=TRAINER_IMG[region+':'+opp.name];
+  if(wiki) chain.push(wiki);
+  if(opp.ts) chain.push(opp.ts);
+  let i=0;
+  const tryNext=()=>{
+    if(i>=chain.length){
+      imgEl.onerror=null;
+      apiPoke(opp.teams[teamIdx||0][0].sp).then(d=>{imgEl.src=d?spriteDefault(d.id):spriteDefault(1);});
+      return;
+    }
+    imgEl.src=chain[i++];
+  };
+  imgEl.onerror=tryNext;
+  tryNext();
+}
+
+// ═══════════════════════════════════════════
+// STAT CALCULATION
+// ═══════════════════════════════════════════
+function calcStats(p,baseData){
+  const bs={};
+  baseData.stats.forEach(s=>{const k=s.stat.name.replace('special-attack','spa').replace('special-defense','spd').replace('attack','atk').replace('defense','def').replace('speed','spe');bs[k]=s.base_stat;});
+  const lv=p.level||100,nat=NATURES[p.nature]||{},iv=p.ivs||{hp:31,atk:31,def:31,spa:31,spd:31,spe:31},ev=p.evs||{},st={};
+  st.hp=Math.floor(((2*(bs.hp||50)+(iv.hp||31)+Math.floor((ev.hp||0)/4))*lv/100)+lv+10);
+  ['atk','def','spa','spd','spe'].forEach(s=>{
+    let v=Math.floor((Math.floor(((2*(bs[s]||50)+(iv[s]!==undefined?iv[s]:31)+Math.floor((ev[s]||0)/4))*lv/100))+5)*(nat[s]||1));
+    const it=ITEMS[p.item]||{};
+    if(s==='def'&&it.defM) v=Math.floor(v*it.defM);
+    if(s==='spd'&&it.spdM) v=Math.floor(v*it.spdM);
+    if(s==='spe'&&it.speM) v=Math.floor(v*it.speM);
+    st[s]=v;
+  });
+  return st;
+}
+function effStat(p,s){
+  let v=p.stats[s];
+  if(s==='atk'&&(p.ability==='huge-power'||p.ability==='pure-power')) v*=2;
+  if(s==='atk'&&p.ability==='guts'&&p.status) v=Math.floor(v*1.5);
+  if(s==='atk'&&p.status==='BRN'&&p.ability!=='guts') v=Math.floor(v*.5);
+  if(s==='spe'&&p.status==='PAR') v=Math.floor(v*.25);
+  if(s==='spd'&&(ITEMS[p.item]||{}).spdM) v=p.stats.spd; // already in base stats
+  const b=(p.statBoosts&&p.statBoosts[s])||0;
+  const tbl=[.25,.28,.33,.4,.5,.66,1,1.5,2,2.5,3,3.5,4];
+  return Math.max(1,Math.floor(v*(tbl[b+6]||1)));
+}
+function typeEff(mtype,defTypes){
+  if(!defTypes||!defTypes.length) return 1;
+  let e=1;const ch=TYPECHART[mtype]||{};
+  defTypes.forEach(t=>{e*=(ch[t]!==undefined?ch[t]:1);});
+  return e;
+}
+
+// ═══════════════════════════════════════════
+// PASTE PARSER
+// ═══════════════════════════════════════════
+function parsePaste(text){
+  const blocks=text.trim().split(/\n[ \t]*\n/).filter(b=>b.trim());
+  const team=[];
+  for(const blk of blocks){
+    const lines=blk.trim().split('\n').map(l=>l.trim()).filter(l=>l&&!l.startsWith('==='));
+    if(!lines.length) continue;
+    const p={species:'',nickname:'',item:'none',ability:'',level:100,
+      evs:{hp:0,atk:0,def:0,spa:0,spd:0,spe:0},ivs:{hp:31,atk:31,def:31,spa:31,spd:31,spe:31},
+      nature:'hardy',moves:[],currentHp:0,maxHp:0,status:null,statBoosts:{},usedSash:false,usedBerry:false,ppMap:{}};
+    let l1=lines[0];const at=l1.indexOf('@');
+    let nm=at>=0?l1.slice(0,at).trim():l1.trim();
+    if(at>=0) p.item=l1.slice(at+1).trim().toLowerCase().replace(/\s+/g,'-');
+    nm=nm.replace(/\s*\([MF]\)\s*$/,'').trim();
+    const pm=nm.match(/^(.+?)\s*\(([^)]+)\)\s*$/);
+    if(pm){p.nickname=pm[1].trim();p.species=pm[2].trim();}else p.species=nm.trim();
+    p.displayName=p.nickname||cap(p.species.replace(/-/g,' '));
+    for(let i=1;i<lines.length;i++){
+      const ln=lines[i];
+      if(ln.startsWith('Ability:')) p.ability=ln.slice(8).trim().toLowerCase().replace(/\s+/g,'-');
+      else if(ln.startsWith('Level:')) p.level=parseInt(ln.slice(6))||100;
+      else if(ln.startsWith('EVs:')){ln.slice(4).trim().split('/').forEach(pt=>{const m=pt.trim().match(/(\d+)\s+(.+)/);if(m){const k=statKey(m[2].trim());if(k)p.evs[k]=parseInt(m[1]);}});}
+      else if(ln.startsWith('IVs:')){ln.slice(4).trim().split('/').forEach(pt=>{const m=pt.trim().match(/(\d+)\s+(.+)/);if(m){const k=statKey(m[2].trim());if(k)p.ivs[k]=parseInt(m[1]);}});}
+      else if(/\bNature\b/i.test(ln)) p.nature=ln.replace(/\s*Nature\s*/i,'').trim().toLowerCase();
+      else if(ln.startsWith('- ')){const mv=ln.slice(2).trim().toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9\-]/g,'').replace(/-+$/,'');if(mv&&p.moves.length<4)p.moves.push(mv);}
+    }
+    if(p.species&&p.moves.length>0) team.push(p);
+  }
+  return team.slice(0,6);
+}
+function statKey(s){const m={hp:'hp',atk:'atk',def:'def',spa:'spa','sp.atk':'spa','sp. atk':'spa','spatk':'spa',spd:'spd','sp.def':'spd','sp. def':'spd','spdef':'spd',spe:'spe',speed:'spe'};return m[s.toLowerCase().replace(/\s+/g,'')]||null;}
+
+// ═══════════════════════════════════════════
+// IMPORT TEAM
+// ═══════════════════════════════════════════
+async function importTeam(){
+  const text=$('paste-input').value.trim();
+  if(!text){showErr('Pega primero tu equipo en formato Showdown.');return;}
+  $('parse-err').style.display='none';$('parse-ok').style.display='block';
+  $('parse-ok').textContent='Analizando equipo...';
+  try{
+    const team=parsePaste(text);
+    if(!team.length){showErr('No se encontraron Pokémon válidos. Revisa el formato.');return;}
+    $('parse-ok').textContent=`Cargando ${team.length} Pokémon...`;
+    for(let i=0;i<team.length;i++){
+      const p=team[i];
+      $('parse-ok').textContent=`Cargando ${p.displayName} (${i+1}/${team.length})...`;
+      const data=await apiPoke(p.species);
+      if(data){p.pokeData=data;p.id=data.id;p.types=data.types.map(t=>t.type.name);p.stats=calcStats(p,data);}
+      else{p.id=1;p.types=['normal'];p.stats={hp:250,atk:110,def:90,spa:90,spd:90,spe:100};}
+      p.maxHp=p.stats.hp;p.currentHp=p.stats.hp;
+      p.moves.forEach(m=>{p.ppMap[m]=8;});
+    }
+    G.playerTeam=team;renderTeamGrid(team);
+    $('parse-ok').textContent=`✓ ${team.length} Pokémon importados`;
+    $('btn-coliseo').style.display='inline-block';
+    saveGame();
+  }catch(e){showErr('Error: '+e.message);$('parse-ok').style.display='none';}
+}
+function showErr(m){$('parse-err').textContent=m;$('parse-err').style.display='block';$('parse-ok').style.display='none';}
+function renderTeamGrid(team){
+  const g=$('team-grid');g.innerHTML='';
+  for(let i=0;i<6;i++){
+    const card=document.createElement('div');card.className='poke-card';card.style.position='relative';
+    if(team[i]){
+      const p=team[i];
+      const url=p.id?spriteHome(p.id):spriteDefault(1);
+      const fb=p.id?spriteDefault(p.id):spriteDefault(1);
+      const types=(p.types||[]).map(t=>`<span class="type-badge t-${t}">${t}</span>`).join('');
+      const nat=p.nature?`<div style="font-size:8px;color:var(--muted);">${cap(p.nature)}</div>`:'';
+      const rm=(!G.runLocked)?`<button class="team-slot-x" onclick="event.stopPropagation();removeFromTeam(${i})">✕</button>`:'';
+      card.innerHTML=`${rm}<img src="${url}" onerror="this.src='${fb}'" alt="${p.displayName}">
+        <div class="poke-name">${p.displayName}</div>
+        <div class="poke-level">Lv.${p.level}</div>
+        <div style="margin-top:2px;">${types}</div>${nat}`;
+    }else card.innerHTML='<span style="color:var(--muted);font-size:24px;">—</span>';
+    g.appendChild(card);
+  }
+}
+
+// ═══════════════════════════════════════════
+// VISUAL TEAM BUILDER
+// ═══════════════════════════════════════════
+const STATS_LIST=['hp','atk','def','spa','spd','spe'];
+const STAT_LABELS={hp:'HP',atk:'Atk',def:'Def',spa:'SpA',spd:'SpD',spe:'Spe'};
+let BLD_LIST=null,BLD_LIST_LOADING=null;
+let BLD={species:null,data:null,moves:[]};
+
+function switchTeamTab(tab){
+  $('tab-paste').style.display=tab==='paste'?'block':'none';
+  $('tab-builder').style.display=tab==='builder'?'block':'none';
+  $('tab-btn-paste').classList.toggle('active',tab==='paste');
+  $('tab-btn-builder').classList.toggle('active',tab==='builder');
+  if(tab==='builder'){ensureBldList();if(!$('bld-nature').options.length) bldInitStaticSelects();}
+}
+function bldInitStaticSelects(){
+  const natSel=$('bld-nature');natSel.innerHTML=Object.keys(NATURES).map(n=>`<option value="${n}">${cap(n)}</option>`).join('');
+  const itemSel=$('bld-item');
+  itemSel.innerHTML='<option value="none">Ninguno</option>'+Object.keys(ITEMS).map(it=>`<option value="${it}">${cap(it.replace(/-/g,' '))}</option>`).join('');
+  const ivWrap=$('bld-ivs');ivWrap.innerHTML=STATS_LIST.map(s=>`<div class="bld-stat-cell"><label>${STAT_LABELS[s]}</label><input type="number" min="0" max="31" value="31" class="bld-input" id="bld-iv-${s}"></div>`).join('');
+  const evWrap=$('bld-evs');evWrap.innerHTML=STATS_LIST.map(s=>`<div class="bld-stat-cell"><label>${STAT_LABELS[s]}</label><input type="number" min="0" max="252" value="0" class="bld-input" id="bld-ev-${s}" oninput="bldUpdateEvTotal()"></div>`).join('');
+}
+function bldUpdateEvTotal(){
+  let tot=0;
+  STATS_LIST.forEach(s=>{
+    const el=$('bld-ev-'+s);let v=parseInt(el.value)||0;
+    if(v<0)v=0;if(v>252)v=252;el.value=v;tot+=v;
+  });
+  if(tot>508){
+    // trim last-edited overflow proportionally is complex; simplest: clamp displayed total and warn
+    $('bld-ev-total').style.color='var(--red2)';
+  } else $('bld-ev-total').style.color='';
+  $('bld-ev-total').textContent=tot;
+}
+function bldMaxIvs(){STATS_LIST.forEach(s=>{$('bld-iv-'+s).value=31;});}
+async function ensureBldList(){
+  if(BLD_LIST||BLD_LIST_LOADING) return BLD_LIST_LOADING;
+  BLD_LIST_LOADING=(async()=>{
+    try{
+      const r=await fetch('https://pokeapi.co/api/v2/pokemon?limit=1300');
+      const d=await r.json();
+      BLD_LIST=d.results.map(x=>x.name);
+    }catch(e){BLD_LIST=[];}
+    return BLD_LIST;
+  })();
+  return BLD_LIST_LOADING;
+}
+let bldSearchTimer=null;
+function bldSearchInput(){
+  clearTimeout(bldSearchTimer);
+  bldSearchTimer=setTimeout(async()=>{
+    const q=$('bld-search').value.trim().toLowerCase();
+    const box=$('bld-suggest');
+    if(!q){box.classList.remove('show');box.innerHTML='';return;}
+    await ensureBldList();
+    const matches=(BLD_LIST||[]).filter(n=>n.includes(q)).slice(0,10);
+    if(!matches.length){box.classList.remove('show');box.innerHTML='';return;}
+    box.innerHTML=matches.map(n=>`<div class="bld-suggest-item" onclick="bldSelectSpecies('${n}')">${n.replace(/-/g,' ')}</div>`).join('');
+    box.classList.add('show');
+  },220);
+}
+async function bldSelectSpecies(name){
+  $('bld-suggest').classList.remove('show');
+  $('bld-search').value=name;
+  const data=await apiPoke(name);
+  if(!data){modal('Error','No se pudo cargar ese Pokémon.',[{text:'OK',fn:()=>{}}]);return;}
+  BLD.species=name;BLD.data=data;BLD.moves=[];
+  $('bld-preview').style.display='block';
+  $('bld-sprite').src=spriteHome(data.id);
+  $('bld-sprite').onerror=()=>{$('bld-sprite').src=spriteDefault(data.id);};
+  $('bld-name').textContent=cap(name.replace(/-/g,' '));
+  $('bld-types').innerHTML=data.types.map(t=>`<span class="type-badge t-${t.type.name}">${t.type.name}</span>`).join('');
+  const abSel=$('bld-ability');
+  abSel.innerHTML=data.abilities.map(a=>`<option value="${a.ability.name}">${cap(a.ability.name.replace(/-/g,' '))}${a.is_hidden?' (oculta)':''}</option>`).join('');
+  bldRenderMoves();
+}
+function bldToggleMove(mv){
+  const i=BLD.moves.indexOf(mv);
+  if(i>=0) BLD.moves.splice(i,1);
+  else{ if(BLD.moves.length>=4) return; BLD.moves.push(mv); }
+  bldRenderMoves();
+}
+function bldRenderMoves(){
+  if(!BLD.data) return;
+  const q=($('bld-move-search').value||'').trim().toLowerCase();
+  const all=BLD.data.moves.map(m=>m.move.name);
+  const filtered=q?all.filter(m=>m.includes(q)):all;
+  const list=$('bld-moves');
+  list.innerHTML=filtered.slice(0,120).map(mv=>{
+    const picked=BLD.moves.includes(mv);
+    const full=!picked&&BLD.moves.length>=4;
+    return `<div class="bld-move-item${picked?' picked':''}${full?' disabled':''}" onclick="${full?'':`bldToggleMove('${mv}')`}">
+      <span>${fmtMv(mv)}</span><span>${picked?'✓':''}</span></div>`;
+  }).join('')||'<div style="padding:10px;font-size:11px;color:var(--muted);">Sin resultados</div>';
+}
+async function bldAddToTeam(){
+  if(!BLD.data){modal('Falta Pokémon','Busca y elige un Pokémon primero.',[{text:'OK',fn:()=>{}}]);return;}
+  if(!BLD.moves.length){modal('Sin movimientos','Elige al menos 1 movimiento.',[{text:'OK',fn:()=>{}}]);return;}
+  if(G.playerTeam.length>=6){modal('Equipo completo','Ya tienes 6 Pokémon.',[{text:'OK',fn:()=>{}}]);return;}
+  let evTotal=0;const evs={},ivs={};
+  STATS_LIST.forEach(s=>{
+    let ev=parseInt($('bld-ev-'+s).value)||0;ev=Math.max(0,Math.min(252,ev));
+    let iv=parseInt($('bld-iv-'+s).value)||0;iv=Math.max(0,Math.min(31,iv));
+    evs[s]=ev;ivs[s]=iv;evTotal+=ev;
+  });
+  if(evTotal>508){modal('EVs inválidos',`El total de EVs (${evTotal}) supera el máximo permitido (508). Ajusta los valores.`,[{text:'OK',fn:()=>{}}]);return;}
+  const level=Math.max(1,Math.min(100,parseInt($('bld-level').value)||100));
+  const p={species:BLD.species,displayName:cap(BLD.species.replace(/-/g,' ')),nickname:'',
+    item:$('bld-item').value||'none',ability:$('bld-ability').value||'',level,
+    evs,ivs,nature:$('bld-nature').value||'hardy',moves:BLD.moves.slice(0,4),
+    currentHp:0,maxHp:0,status:null,statBoosts:{},usedSash:false,usedBerry:false,ppMap:{},choiceMove:null,
+    pokeData:BLD.data,id:BLD.data.id,types:BLD.data.types.map(t=>t.type.name)};
+  p.stats=calcStats(p,BLD.data);
+  p.maxHp=p.stats.hp;p.currentHp=p.stats.hp;
+  await Promise.all(p.moves.map(m=>apiMove(m)));
+  p.moves.forEach(m=>{p.ppMap[m]=8;});
+  G.playerTeam.push(p);
+  renderTeamGrid(G.playerTeam);
+  $('btn-coliseo').style.display='inline-block';
+  saveGame();
+  // Reset form for next Pokémon
+  BLD={species:null,data:null,moves:[]};
+  $('bld-search').value='';$('bld-preview').style.display='none';$('bld-move-search').value='';
+  modal('¡Añadido!',`${p.displayName} se unió a tu equipo (${G.playerTeam.length}/6).`,[{text:'OK',fn:()=>{}}]);
+}
+function removeFromTeam(i){
+  if(G.runLocked) return;
+  G.playerTeam.splice(i,1);
+  renderTeamGrid(G.playerTeam);
+  if(!G.playerTeam.length) $('btn-coliseo').style.display='none';
+  saveGame();
+}
+
+// ═══════════════════════════════════════════
+// HUB
+// ═══════════════════════════════════════════
+function goHub(){
+  if(!G.playerTeam||!G.playerTeam.length){alert('Importa tu equipo primero.');return;}
+  if(!G.runLocked){
+    G.runLocked=true;
+    modal('¡Equipo bloqueado!','Tu equipo queda fijado para toda la partida. En un roguelike no se puede cambiar ni resetear hasta perder o empezar una nueva partida.',[{text:'Entendido',fn:()=>{}}]);
+  }
+  saveGame();
+  goTo('hub');
+}
+function renderHub(){
+  $('bp-val').textContent=G.bp+' BP';
+  const diffLabels={easy:'🟢 FÁCIL',medium:'🟡 MEDIO',extreme:'🔴 EXTREMO'};
+  const dv=$('diff-val');if(dv) dv.textContent=diffLabels[G.difficulty]||'';
+  const it=G.items;
+  $('items-val').textContent=`🔵 Revivir×${it.revive}  💊 Max×${it.maxpotion}  ✨ FullR×${it.fullrestore}  🔋 PP×${it.pprestore}`;
+  const eqBtn=$('btn-hub-equipo');if(eqBtn) eqBtn.style.display=G.runLocked?'none':'inline-block';
+  ['revive','maxpotion','fullrestore','pprestore'].forEach(k=>{const el=$('qty-'+k);if(el)el.textContent='Tienes: '+G.items[k];});
+  const grid=$('regions-grid');grid.innerHTML='';
+  const order=Object.keys(REGIONS);
+  order.forEach((r,idx)=>{
+    const data=REGIONS[r];const prog=G.progress[r]||0;const done=G.completed[r];
+    const prevKey=order[idx-1];const locked=idx>0&&!G.completed[prevKey];
+    const card=document.createElement('div');
+    card.className=`region-card rc-${r}${locked?' locked':''}${done?' done':''}`;
+    const pct=Math.round((prog/data.members.length)*100);
+    card.innerHTML=`<div class="rc-bar"></div>
+      ${done?'<div class="rc-check">✓</div>':locked?'<div class="rc-lock">🔒</div>':''}
+      <div class="rc-name">${data.emoji} Alto Mando de ${data.name}</div>
+      <div class="rc-info">${done?'COMPLETADO':locked?`Completa ${REGIONS[prevKey].name} primero`:prog+'/'+data.members.length+' rivales'}</div>
+      <div class="rc-prog"><div class="rc-prog-fill${done?' done':''}" style="width:${pct}%"></div></div>`;
+    if(!locked) card.addEventListener('click',()=>openPrep(r));
+    grid.appendChild(card);
+  });
+}
+function buyItem(item){
+  const costs={revive:10,maxpotion:8,fullrestore:15,pprestore:6};
+  if(G.bp<costs[item]){modal('Sin BP',`Necesitas ${costs[item]} BP. Tienes ${G.bp}.`,[{text:'OK',fn:()=>{}}]);return;}
+  G.bp-=costs[item];G.items[item]++;renderHub();saveGame();
+}
+
+// ═══════════════════════════════════════════
+// TITLE SCREEN STARS
+// ═══════════════════════════════════════════
+function initStars(){
+  const c=$('stars');if(!c) return;
+  const ctx=c.getContext('2d');
+  let W,H,stars=[];
+  function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight;stars=Array.from({length:160},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.2+.2,o:Math.random(),sp:Math.random()*.004+.002}));}
+  resize();window.addEventListener('resize',resize);
+  (function draw(){ctx.clearRect(0,0,W,H);stars.forEach(s=>{s.o+=s.sp;if(s.o>1){s.sp=-Math.abs(s.sp);}if(s.o<0){s.sp=Math.abs(s.sp);s.o=0;}ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle=`rgba(255,255,255,${s.o})`;ctx.fill();});requestAnimationFrame(draw);})();
+}
+
+// ═══════════════════════════════════════════
+// INTRO ANIMATION
+// ═══════════════════════════════════════════
+// ═══════════════════════════════════════════
+// PREP SCREEN — curar/recargar PP antes del combate
+// ═══════════════════════════════════════════
+let PREP_REGION=null;
+function openPrep(region){
+  PREP_REGION=region;
+  const idx=G.progress[region]||0;
+  const opp=REGIONS[region].members[idx];
+  $('prep-opp-name').textContent=opp?opp.name:'—';
+  renderPrep();
+  goTo('prep');
+}
+function renderPrep(){
+  const it=G.items;
+  $('prep-items-bar').innerHTML=`🔵 Revivir×${it.revive} &nbsp; 💊 Max Poción×${it.maxpotion} &nbsp; ✨ Full Restore×${it.fullrestore} &nbsp; 🔋 Recarga PP×${it.pprestore}`;
+  const list=$('prep-list');list.innerHTML='';
+  G.playerTeam.forEach((p,i)=>{
+    const fainted=p.currentHp<=0;
+    const pct=Math.max(0,p.currentHp/p.maxHp*100);
+    const col=fainted?'#333':pct>50?'var(--green)':pct>20?'var(--yellow)':'var(--red2)';
+    const noPp=p.moves.every(m=>(p.ppMap[m]||0)<=0);
+    const row=document.createElement('div');
+    row.className='poke-card';row.style.cssText='flex-direction:row;align-items:center;gap:10px;text-align:left;padding:10px;';
+    const url=p.id?spriteHome(p.id):spriteDefault(1);
+    row.innerHTML=`<img src="${url}" style="width:52px;height:52px;image-rendering:pixelated;flex-shrink:0;" onerror="this.src='${spriteDefault(p.id||1)}'">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12px;font-weight:800;">${p.displayName} <span style="color:var(--muted);font-weight:400;">Lv.${p.level}</span></div>
+        <div class="hp-track" style="margin:4px 0;"><div class="hp-fill" style="width:${pct}%;background:${col};"></div></div>
+        <div style="font-size:10px;color:var(--muted);">${fainted?'DEBILITADO':Math.max(0,p.currentHp)+'/'+p.maxHp+' HP'}${p.status?' · '+p.status:''}${noPp?' · SIN PP':''}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <button class="btn-secondary" style="font-size:9px;padding:6px 8px;" ${(!fainted||!it.revive)?'disabled':''} onclick="prepUse(${i},'revive')">Revivir</button>
+        <button class="btn-secondary" style="font-size:9px;padding:6px 8px;" ${(fainted||pct>=100||!it.maxpotion)?'disabled':''} onclick="prepUse(${i},'maxpotion')">Max Poción</button>
+        <button class="btn-secondary" style="font-size:9px;padding:6px 8px;" ${(fainted||(pct>=100&&!p.status)||!it.fullrestore)?'disabled':''} onclick="prepUse(${i},'fullrestore')">Full Restore</button>
+        <button class="btn-secondary" style="font-size:9px;padding:6px 8px;" ${(fainted||!noPp&&p.moves.every(m=>(p.ppMap[m]||0)>=8)||!it.pprestore)?'disabled':''} onclick="prepUse(${i},'pprestore')">Recarga PP</button>
+      </div>`;
+    list.appendChild(row);
+  });
+}
+function prepUse(i,item){
+  const p=G.playerTeam[i];
+  if(!G.items[item]) return;
+  if(item==='revive'){ if(p.currentHp>0) return; G.items.revive--;p.currentHp=Math.floor(p.maxHp*.5); }
+  else if(item==='maxpotion'){ if(p.currentHp<=0) return; G.items.maxpotion--;p.currentHp=p.maxHp; }
+  else if(item==='fullrestore'){ if(p.currentHp<=0) return; G.items.fullrestore--;p.currentHp=p.maxHp;p.status=null; }
+  else if(item==='pprestore'){ if(p.currentHp<=0) return; G.items.pprestore--;p.moves.forEach(m=>p.ppMap[m]=8); }
+  renderPrep();saveGame();
+}
+function confirmPrep(){challengeRegion(PREP_REGION);}
+
+async function challengeRegion(region){
+  const idx=G.progress[region]||0;
+  const opp=REGIONS[region].members[idx];if(!opp) return;
+  const teamIdx=Math.floor(Math.random()*opp.teams.length);
+  B={_pendingRegion:region,_pendingIdx:idx,_pendingOpp:opp,_teamIdx:teamIdx};
+
+  goTo('intro');
+  $('intro-text').textContent='';
+  $('intro-vs').classList.remove('show');
+  $('iti').classList.remove('show');
+
+  // Set arena background
+  const scene=$('intro-scene');
+  scene.className='intro-scene '+(opp.arena||'ba-default');
+  // Set floor color to match arena
+  scene.querySelector('.arena-floor').style.background='rgba(0,0,0,.3)';
+
+  const playerEl=$('intro-player');
+  playerEl.src=playerSkinSprite();
+  playerEl.onerror=()=>{playerEl.onerror=null;playerEl.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/trainers/'+(G.playerSkin==='trainer2.png'?'leaf':'red')+'.png';};
+  playerEl.style.left='-120px';
+
+  const trainerEl=$('intro-trainer');
+  setTrainerSprite(trainerEl,opp,region,teamIdx);
+  trainerEl.style.right='-120px';
+
+  $('intro-text').textContent=`¡${opp.name} quiere combatir!`;
+
+  // Start loading team in parallel
+  const loadPromise=loadEnemyTeam(opp.teams[teamIdx]);
+
+  await sleep(300);
+  playerEl.style.left='80px';trainerEl.style.right='80px';
+  await sleep(1400);
+
+  // Show trainer info
+  $('iti-name').textContent=opp.name;
+  $('iti-title').textContent=opp.title;
+  $('iti').classList.add('show');
+
+  const flash=$('intro-flash');
+  flash.style.opacity='1';await sleep(100);flash.style.opacity='0';
+  $('intro-vs').classList.add('show');
+  await sleep(700);
+  $('intro-text').textContent=`"${opp.title}"`;
+  await sleep(1000);
+  flash.style.opacity='1';await sleep(80);flash.style.opacity='0';
+  await sleep(300);
+
+  const enemyTeam=await loadPromise;
+  await initBattle(region,idx,opp,enemyTeam);
+}
+
+const DIFFICULTY_CAPS={easy:50,medium:75,extreme:100};
+function scaledLevel(baseLv){
+  const cap=DIFFICULTY_CAPS[G.difficulty]||75;
+  if(G.difficulty==='extreme') return 100;
+  return Math.min(baseLv||50,cap);
+}
+async function loadEnemyTeam(teamSpec){
+  const enemyTeam=[];
+  for(const spec of teamSpec){
+    const data=await apiPoke(spec.sp);
+    const p={...spec,species:spec.sp,evs:spec.evs||{},ivs:{hp:31,atk:31,def:31,spa:31,spd:31,spe:31},
+      nature:spec.nat||'hardy',moves:spec.mv||[],item:spec.item||'none',level:scaledLevel(spec.lv||50),
+      ability:spec.ability||'',statBoosts:{},status:null,usedSash:false,usedBerry:false,ppMap:{},choiceMove:null};
+    if(data){p.id=data.id;p.types=data.types.map(t=>t.type.name);p.stats=calcStats(p,data);}
+    else{p.id=1;p.types=['normal'];p.stats={hp:220,atk:110,def:90,spa:90,spd:90,spe:100};}
+    p.maxHp=p.stats.hp;p.currentHp=p.stats.hp;
+    p.displayName=cap(spec.sp.replace(/-/g,' '));
+    (spec.mv||[]).forEach(m=>{p.ppMap[m]=8;});
+    await Promise.all((spec.mv||[]).map(m=>apiMove(m)));
+    enemyTeam.push(p);
+  }
+  return enemyTeam;
+}
+
+// ═══════════════════════════════════════════
+// BATTLE INIT
+// ═══════════════════════════════════════════
+async function initBattle(region,memberIdx,opp,enemyTeam){
+  G.playerTeam.forEach(p=>{p.statBoosts={};if(!p.ppMap||!Object.keys(p.ppMap).length){p.ppMap={};p.moves.forEach(m=>p.ppMap[m]=8);}if(p.status===undefined)p.status=null;p.choiceMove=null;p.usedBerry=false;p.usedSash=false;});
+  const first=G.playerTeam.find(p=>p.currentHp>0);
+  if(!first){modal('Sin Pokémon','Todos están debilitados. Usa Revivir en la tienda.',[{text:'Hub',fn:()=>goTo('hub')}]);return;}
+
+  B={region,memberIdx,opp,enemyTeam,enemyIdx:0,
+    playerIdx:G.playerTeam.indexOf(first),
+    weather:null,weatherTurns:0,turn:0,canAct:true,switchForced:false};
+
+  // Set arena
+  const arena=$('battle-arena');
+  arena.className='battle-arena '+(opp.arena||'ba-default');
+  // Retrato del entrenador rival
+  const bt=$('battle-trainer');
+  if(bt){bt.style.display='block';setTrainerSprite(bt,opp,region,B._teamIdx||0);}
+
+  goTo('battle');
+  $('battle-log').innerHTML='';
+  blogLine(`¡${opp.name} envía a ${enemyTeam[0].displayName}!`,'info');
+  blogLine(`¡Adelante, ${first.displayName}!`,'info');
+  await checkEntry(enemyTeam[0],first,true);
+  await checkEntry(first,enemyTeam[0],false);
+  await refreshSprites();refreshBattleUI();renderPartyRow();await refreshMoves();setEnabled(true);
+}
+
+async function refreshSprites(){
+  const e=B.enemyTeam[B.enemyIdx],p=G.playerTeam[B.playerIdx];
+  const es=$('e-sprite'),ps=$('p-sprite');
+  es.src=spriteDefault(e.id||1);es.onerror=()=>{es.src=spriteDefault(1);};es.style.display='block';
+  ps.src=spriteBack(p.id||1);ps.onerror=()=>{ps.src=spriteBack(1);};ps.style.display='block';
+}
+
+// ═══════════════════════════════════════════
+// BATTLE UI
+// ═══════════════════════════════════════════
+function refreshBattleUI(){
+  if(!B) return;
+  const e=B.enemyTeam[B.enemyIdx],p=G.playerTeam[B.playerIdx];
+  $('e-name').textContent=e.displayName;$('e-lv').textContent='Lv.'+e.level;
+  const ep=Math.max(0,(e.currentHp/e.maxHp)*100);
+  const ef=$('e-hp-fill');ef.style.width=ep+'%';ef.style.background=ep>50?'var(--green)':ep>20?'var(--yellow)':'var(--red2)';
+  $('e-hp-nums').textContent=e.currentHp+'/'+e.maxHp;
+  $('e-status').innerHTML=e.status?`<span class="status-tag st-${e.status}">${e.status}</span>`:'';
+  $('p-name').textContent=p.displayName;$('p-lv').textContent='Lv.'+p.level;
+  const pp=Math.max(0,(p.currentHp/p.maxHp)*100);
+  const pf=$('p-hp-fill');pf.style.width=pp+'%';pf.style.background=pp>50?'var(--green)':pp>20?'var(--yellow)':'var(--red2)';
+  $('p-hp-nums').textContent=p.currentHp+'/'+p.maxHp;
+  $('p-status').innerHTML=p.status?`<span class="status-tag st-${p.status}">${p.status}</span>`:'';
+  const wb=$('weather-bar');
+  if(B.weather){const wn={sun:'☀ Sol',rain:'🌧 Lluvia',sand:'🌪 Arena',hail:'❄ Granizo'};wb.textContent=wn[B.weather]||B.weather;wb.style.display='block';}
+  else wb.style.display='none';
+  renderPartyRow();
+}
+function renderPartyRow(){
+  const el=$('party-row');if(!el||!B) return;
+  el.innerHTML=G.playerTeam.map((p,i)=>{
+    const pct=p.currentHp/p.maxHp;
+    const col=p.currentHp<=0?'#333':pct>0.5?'var(--green)':pct>0.2?'var(--yellow)':'var(--red2)';
+    const active=i===B.playerIdx;
+    return `<div class="party-dot${active?' active':''}${p.currentHp<=0?' fainted':''}" style="background:${col}" title="${p.displayName}: ${p.currentHp}/${p.maxHp} HP"></div>`;
+  }).join('');
+}
+async function refreshMoves(){
+  if(!B) return;
+  const p=G.playerTeam[B.playerIdx];
+  const g=$('moves-grid');g.innerHTML='';
+  const anyPp=p.moves.some(mv=>(p.ppMap[mv]||0)>0);
+  for(const mv of p.moves){
+    const btn=document.createElement('button');btn.className='move-btn';
+    const pp=p.ppMap[mv]||0;
+    const mvd=C['mv_'+mv];
+    const mtype=mvd?.type?.name||'normal';
+    const col=TCOLORS[mtype]||'#888';
+    const power=mvd?.power?mvd.power+'bp':'—';
+    const locked=p.choiceMove&&p.choiceMove!==mv;
+    btn.style.background=`linear-gradient(90deg,${col}22 0%,var(--card) 45%)`;
+    btn.style.borderColor=col+'66';
+    btn.innerHTML=`<div class="move-left"><span class="move-dot" style="background:${col}"></span><span class="move-name">${fmtMv(mv)}</span></div>
+      <div class="move-right"><span class="move-type-mini t-${mtype}">${mtype}</span><span class="move-pp">PP ${pp}</span></div>`;
+    btn.disabled=pp<=0||locked;
+    btn.onclick=()=>playerAction(mv);
+    g.appendChild(btn);
+  }
+  if(!anyPp){
+    const btn=document.createElement('button');btn.className='move-btn';
+    btn.style.background='linear-gradient(90deg,#88222244 0%,var(--card) 45%)';
+    btn.style.borderColor='#ff5566';
+    btn.innerHTML=`<div class="move-left"><span class="move-dot" style="background:#ff5566"></span><span class="move-name">Forcejeo</span></div>
+      <div class="move-right"><span class="move-pp">Sin PP</span></div>`;
+    btn.onclick=()=>playerAction('_struggle');
+    g.appendChild(btn);
+  }
+}
+function setEnabled(v){
+  document.querySelectorAll('.move-btn,#btn-switch,#btn-item').forEach(el=>el.disabled=!v);
+  if(B) B.canAct=v;
+}
+
+// ═══════════════════════════════════════════
+// AI — SMART MOVE SELECTION
+// ═══════════════════════════════════════════
+function aiMove(enemy,player){
+  // Choice lock
+  if(enemy.choiceMove&&(enemy.ppMap[enemy.choiceMove]||0)>0) return enemy.choiceMove;
+  const avail=enemy.moves.filter(m=>(enemy.ppMap[m]||0)>0);
+  if(!avail.length) return '_struggle';
+  const it=ITEMS[enemy.item]||{};
+  const noStatus=it.noStatus;
+
+  let scored=avail.map(mv=>{
+    const mvd=C['mv_'+mv];let score=25;
+    if(!mvd){return{mv,score:25};}
+    if(mvd.power){
+      const mtype=mvd.type?.name||'normal';
+      // Check ability immunity
+      const immTypes=ABILITIES_IMM[player.ability]||[];
+      if((ITEMS[player.item]||{}).immune?.includes(mtype)){score=-9000;}
+      else if(immTypes.includes(mtype)){score=-9000;}
+      else{
+        const eff=typeEff(mtype,player.types);
+        if(eff===0){score=-9000;}
+        else{
+          const cat=mvd.damage_class?.name;const isPhys=cat==='physical';
+          const atkV=isPhys?effStat(enemy,'atk'):effStat(enemy,'spa');
+          const defV=isPhys?effStat(player,'def'):effStat(player,'spd');
+          const adaptStab=(enemy.ability==='adaptability'&&enemy.types?.includes(mtype))?2:1.5;
+          const stab=enemy.types?.includes(mtype)?adaptStab:1;
+          score=(mvd.power||0)*atkV/defV*stab*eff;
+          if(eff>=2) score*=1.3;
+          else if(eff<=0.5) score*=0.6;
+        }
+      }
+    } else if(!noStatus){
+      if(HEAL_MOVES.includes(mv)){const r=enemy.currentHp/enemy.maxHp;score=r<0.4?100:r<0.6?50:8;}
+      else if(BOOST_MOVES[mv]){const r=enemy.currentHp/enemy.maxHp;score=r>0.6?75:r>0.4?35:8;}
+      else if(!player.status) score=40;
+      else score=8;
+    } else score=-100;
+    return {mv,score};
+  });
+
+  scored.sort((a,b)=>b.score-a.score);
+  // 15% random factor
+  if(Math.random()<0.15&&scored.length>1){
+    const top=scored.slice(0,Math.min(3,scored.length));
+    return top[Math.floor(Math.random()*top.length)].mv;
+  }
+  const chosen=scored[0].mv;
+  if(it.choice) enemy.choiceMove=chosen;
+  return chosen;
+}
+
+// ═══════════════════════════════════════════
+// ENTRY ABILITIES
+// ═══════════════════════════════════════════
+async function checkEntry(poke,opponent,isEnemy){
+  const ab=poke.ability;
+  if(ab==='intimidate'){
+    opponent.statBoosts.atk=Math.max(-6,(opponent.statBoosts.atk||0)-1);
+    blogLine(`⚡ ¡Intimidación de ${poke.displayName} bajó el Ataque de ${opponent.displayName}!`,'info');
+  }
+  if(ab==='drizzle'){B.weather='rain';B.weatherTurns=8;blogLine('🌧 ¡La lluvia cayó por Llovizna!','info');}
+  if(ab==='drought'){B.weather='sun';B.weatherTurns=8;blogLine('☀ ¡El sol brilla por Sequía!','info');}
+  if(ab==='sand-stream'){B.weather='sand';B.weatherTurns=8;blogLine('🌪 ¡Tormenta de arena por Arenisca!','info');}
+  if(ab==='snow-warning'){B.weather='hail';B.weatherTurns=8;blogLine('❄ ¡Graniza por Aviso Nieve!','info');}
+  if(ab==='moxie') poke._moxie=true;
+}
+
+// ═══════════════════════════════════════════
+// MAIN PLAYER ACTION
+// ═══════════════════════════════════════════
+async function playerAction(mv){
+  if(!B||!B.canAct) return;
+  const player=G.playerTeam[B.playerIdx];
+  // Guardia dura: nunca permitir usar un movimiento sin PP (defensa además del botón deshabilitado)
+  if(mv!=='_struggle'){
+    const ppLeft=player.ppMap[mv]||0;
+    if(ppLeft<=0){await refreshMoves();return;}
+    const locked=player.choiceMove&&player.choiceMove!==mv;
+    if(locked) return;
+  }
+  setEnabled(false);
+  const enemy=B.enemyTeam[B.enemyIdx];
+  if(mv==='_struggle'){/* Forcejeo: no consume PP, se maneja en executeMove */}
+  else{
+    player.ppMap[mv]=Math.max(0,(player.ppMap[mv]||1)-1);
+    if((ITEMS[player.item]||{}).choice) player.choiceMove=mv;
+  }
+
+  // Priority comparison
+  const pPrio=PRIORITY_MOVES[mv]||0;
+  const eMv=aiMove(enemy,player);
+  if(eMv!=='_struggle') enemy.ppMap[eMv]=Math.max(0,(enemy.ppMap[eMv]||1)-1);
+  const ePrio=PRIORITY_MOVES[eMv]||0;
+  const pSpe=effStat(player,'spe'),eSpe=effStat(enemy,'spe');
+  const playerFirst=pPrio>ePrio||(pPrio===ePrio&&pSpe>=eSpe);
+
+  if(playerFirst){
+    await executeMove(player,enemy,mv,true);
+    if(enemy.currentHp<=0){await onEnemyFaint();return;}
+    if(player.currentHp>0){await sleep(TURN_DELAY);await executeMove(enemy,player,eMv,false);}
+  } else {
+    await executeMove(enemy,player,eMv,false);
+    if(player.currentHp<=0){await onPlayerFaint();return;}
+    if(enemy.currentHp>0){await sleep(TURN_DELAY);await executeMove(player,enemy,mv,true);}
+  }
+
+  if(enemy.currentHp<=0){await onEnemyFaint();return;}
+  if(player.currentHp<=0){await onPlayerFaint();return;}
+  await sleep(HIT_DELAY);
+  await endTurn();
+  refreshBattleUI();
+  if(player.currentHp<=0){await onPlayerFaint();return;}
+  if(enemy.currentHp<=0){await onEnemyFaint();return;}
+  await refreshMoves();setEnabled(true);
+}
+
+// ═══════════════════════════════════════════
+// EXECUTE MOVE
+// ═══════════════════════════════════════════
+async function executeMove(att,def,moveName,isPlayer){
+  if(!att||att.currentHp<=0) return;
+
+  // Status blocks
+  if(att.status==='SLP'){
+    if(!att.sleepTurns) att.sleepTurns=1+Math.floor(Math.random()*3);
+    att.sleepTurns--;
+    if(att.sleepTurns<=0){att.status=null;att.sleepTurns=0;blogLine(`¡${att.displayName} se despertó!`,'heal');}
+    else{blogLine(`${att.displayName} está dormido...`,'info');return;}
+  }
+  if(att.status==='FRZ'){
+    if(Math.random()<.2){att.status=null;blogLine(`¡${att.displayName} se descongeló!`,'heal');}
+    else{blogLine(`${att.displayName} está congelado...`,'info');return;}
+  }
+  if(att.status==='PAR'&&Math.random()<.25){blogLine(`¡${att.displayName} está paralizado!`,'info');return;}
+
+  if(moveName==='_struggle'){
+    const dmg=Math.max(1,Math.floor(att.maxHp/4));
+    dealDmg(def,dmg,isPlayer);att.currentHp=Math.max(0,att.currentHp-dmg);
+    blogLine(`${att.displayName} usa Forcejeo!`,'damage');refreshBattleUI();return;
+  }
+
+  const mvd=C['mv_'+moveName]||await apiMove(moveName);
+  blogLine(`${att.displayName} usa ${fmtMv(moveName)}!`);
+  await sleep(550);
+
+  if(!mvd){
+    const d=Math.max(1,Math.floor(att.stats.atk*.3));dealDmg(def,d,!isPlayer);return;
+  }
+
+  // Accuracy
+  if(mvd.accuracy&&Math.random()*100>mvd.accuracy){
+    blogLine('¡El ataque falló!','info');showDmgFloat(0,isPlayer,'miss');return;
+  }
+
+  const mtype=mvd.type?.name||'normal';
+  const cat=mvd.damage_class?.name;
+  const power=mvd.power;
+
+  // Immunity checks
+  const immTypes=ABILITIES_IMM[def.ability]||[];
+  const balloonImmune=(def.item==='air-balloon')&&mtype==='ground';
+  if(balloonImmune){
+    blogLine(`¡El Globo Aire protege a ${def.displayName}!`,'info');return;
+  }
+  if(immTypes.includes(mtype)){
+    // Absorption abilities
+    if((def.ability==='water-absorb'||def.ability==='storm-drain')&&mtype==='water'){
+      const heal=Math.floor(def.maxHp*.25);def.currentHp=Math.min(def.maxHp,def.currentHp+heal);
+      blogLine(`¡${def.displayName} absorbió el agua!`,'heal');showDmgFloat(heal,isPlayer,'heal');refreshBattleUI();return;
+    }
+    if((def.ability==='volt-absorb'||def.ability==='lightning-rod')&&mtype==='electric'){
+      const heal=Math.floor(def.maxHp*.25);def.currentHp=Math.min(def.maxHp,def.currentHp+heal);
+      blogLine(`¡${def.displayName} absorbió la electricidad!`,'heal');showDmgFloat(heal,isPlayer,'heal');refreshBattleUI();return;
+    }
+    if(def.ability==='flash-fire'&&mtype==='fire'){
+      def.flashFireActive=true;blogLine(`¡Flash Fire de ${def.displayName} se activó!`,'super');return;
+    }
+    if(def.ability==='sap-sipper'&&mtype==='grass'){
+      def.statBoosts.atk=Math.min(6,(def.statBoosts.atk||0)+1);
+      blogLine(`¡${def.displayName} absorbió el ataque!`,'super');return;
+    }
+    blogLine(`¡No afecta a ${def.displayName}!`,'resist');return;
+  }
+
+  // Status moves
+  if(!power||cat==='status'){
+    await handleStatusMove(att,def,mvd,moveName);
+    // Self stat drops for moves like Shell Smash
+    if(BOOST_MOVES[moveName]?.def){
+      const b=BOOST_MOVES[moveName];
+      Object.entries(b).forEach(([s,v])=>{if(typeof v==='number'&&s!=='_transfer') att.statBoosts[s]=Math.max(-6,Math.min(6,(att.statBoosts[s]||0)+v));});
+    }
+    return;
+  }
+
+  // Damage move
+  const isPhys=cat==='physical';
+  const eff=typeEff(mtype,def.types);
+  if(eff===0){blogLine(`¡No afecta a ${def.displayName}!`,'resist');showDmgFloat(0,isPlayer,'miss');return;}
+
+  let atkV=isPhys?effStat(att,'atk'):effStat(att,'spa');
+  let defV=isPhys?effStat(def,'def'):effStat(def,'spd');
+
+  // Flash Fire boost
+  if(mtype==='fire'&&att.flashFireActive) atkV=Math.floor(atkV*1.5);
+  // Thick Fat
+  let effM=1;
+  if(def.ability==='thick-fat'&&(mtype==='fire'||mtype==='ice')) effM=.5;
+  // Multiscale
+  if((def.ability==='multiscale'||def.ability==='shadow-shield')&&def.currentHp>=def.maxHp) effM*=.5;
+  // Solid Rock / Filter
+  if((def.ability==='solid-rock'||def.ability==='filter')&&eff>=2) effM*=.75;
+
+  // STAB
+  const adaptability=att.ability==='adaptability';
+  const stab=att.types?.includes(mtype)?(adaptability?2:1.5):1;
+
+  // Weather
+  let wm=1;
+  if(B.weather==='sun'){if(mtype==='fire')wm=1.5;if(mtype==='water')wm=.5;}
+  if(B.weather==='rain'){if(mtype==='water')wm=1.5;if(mtype==='fire')wm=.5;}
+
+  const crit=Math.random()<.0625;
+
+  // Item multipliers
+  const it=ITEMS[att.item]||{};
+  let iM=it.dmgM||1;
+  if(isPhys&&it.atkM) iM*=it.atkM;
+  if(!isPhys&&it.spaM) iM*=it.spaM;
+  if(it.typeM===mtype) iM*=1.2;
+  if(att.ability==='expert-belt'&&eff>1) iM*=1.2;
+  if(att.item==='expert-belt'&&eff>1) iM*=1.2;
+  if(att.ability==='technician'&&(power||0)<=60) iM*=1.5;
+  if(att.ability==='tinted-lens'&&eff<1) iM*=2;
+  const sheerForce=att.ability==='sheer-force';
+  if(sheerForce) iM*=1.3;
+
+  // Multi-hit
+  let hits=1;
+  const minH=mvd.meta?.min_hits,maxH=mvd.meta?.max_hits;
+  if(maxH&&maxH>1){
+    if(att.ability==='skill-link'){hits=maxH;}
+    else{const r=Math.random();hits=maxH===5?(r<.375?2:r<.75?3:r<.875?4:5):minH+Math.floor(Math.random()*(maxH-minH+1));}
+  }
+
+  let totalDmg=0;let actualHits=0;
+  for(let h=0;h<hits;h++){
+    const dmgRaw=Math.floor(((2*att.level/5+2)*(power||40)*atkV/defV/50+2)*stab*eff*wm*iM*effM*(crit?1.5:1)*(0.85+Math.random()*.15));
+    let dmg=Math.max(1,dmgRaw);
+    if(def.item==='focus-sash'&&!def.usedSash&&def.currentHp===def.maxHp&&dmg>=def.currentHp){
+      dmg=def.currentHp-1;def.usedSash=true;blogLine(`¡Focus Sash de ${def.displayName} aguantó!`,'info');
+    }
+    dealDmg(def,dmg,isPlayer);
+    totalDmg+=dmg;actualHits++;
+    showDmgFloat(dmg,isPlayer,eff>=2?'super':'dmg');
+    if(def.currentHp<=0) break;
+    if(hits>1) await sleep(200);
+  }
+  await sleep(HIT_DELAY);
+  if(hits>1) blogLine(`¡${actualHits} golpes!`,'info');
+  if(eff>=2) blogLine('🌟 ¡Es muy eficaz!','super');
+  else if(eff<1&&eff>0) blogLine('👊 No es muy eficaz...','resist');
+  if(crit) blogLine('🎯 ¡Golpe crítico!','super');
+
+  // Air Balloon pop
+  if(def.item==='air-balloon'&&def.currentHp>0){def.item='none';blogLine(`¡El Globo Aire de ${def.displayName} explotó!`,'info');}
+
+  // Life Orb recoil
+  if(att.item==='life-orb'&&att.ability!=='magic-guard'){const lo=Math.floor(att.maxHp*.1);att.currentHp=Math.max(0,att.currentHp-lo);showDmgFloat(lo,!isPlayer,'dmg');blogLine(`${att.displayName} sufre el retroceso del Life Orb.`,'damage');}
+
+  // Rocky Helmet / Rough Skin / Iron Barbs (contact moves)
+  if(isPhys&&def.currentHp>0){
+    if(def.item==='rocky-helmet'){att.currentHp=Math.max(0,att.currentHp-Math.floor(att.maxHp*.167));blogLine(`${att.displayName} sufre daño del Rocky Helmet!`,'damage');}
+    if(def.ability==='rough-skin'||def.ability==='iron-barbs'){att.currentHp=Math.max(0,att.currentHp-Math.floor(att.maxHp*.125));blogLine(`${att.displayName} sufre daño de ${def.ability==='rough-skin'?'Piel Tosca':'Pinchos'}!`,'damage');}
+  }
+
+  // Move recoil
+  const selfDrop=SELF_DROP_MOVES[moveName]||{};
+  if(selfDrop.hp_recoil&&att.currentHp>0&&att.ability!=='rock-head'){
+    const rc=Math.floor(totalDmg*selfDrop.hp_recoil);att.currentHp=Math.max(0,att.currentHp-rc);blogLine(`${att.displayName} sufre daño por retroceso!`,'damage');
+  }
+
+  // Self stat drops (Close Combat etc)
+  const drops={};
+  if(selfDrop.def) drops.def=selfDrop.def;
+  if(selfDrop.spd) drops.spd=selfDrop.spd;
+  if(selfDrop.atk) drops.atk=selfDrop.atk;
+  if(selfDrop.spa) drops.spa=selfDrop.spa;
+  if(selfDrop.spe) drops.spe=selfDrop.spe;
+  if(Object.keys(drops).length){
+    Object.entries(drops).forEach(([s,v])=>{att.statBoosts[s]=Math.max(-6,(att.statBoosts[s]||0)+v);});
+    if(att.currentHp>0) blogLine(`Los stats de ${att.displayName} bajaron!`,'info');
+  }
+
+  // White Herb: restore negative boosts
+  if(att.item==='white-herb'&&!att.usedBerry&&att.currentHp>0){
+    let hasNeg=false;Object.values(att.statBoosts).forEach(v=>{if(v<0)hasNeg=true;});
+    if(hasNeg){Object.keys(att.statBoosts).forEach(k=>{if(att.statBoosts[k]<0)att.statBoosts[k]=0;});att.usedBerry=true;blogLine(`¡Hierba Blanca de ${att.displayName} restauró sus stats!`,'heal');}
+  }
+
+  // Secondary status (unless Sheer Force)
+  if(!sheerForce&&def.currentHp>0){
+    const ailment=mvd.meta?.ailment?.name;
+    if(ailment&&ailment!=='none'&&!def.status){
+      const chance=mvd.meta?.ailment_chance||0;
+      if(chance>0&&Math.random()*100<(att.ability==='serene-grace'?chance*2:chance)) applyStatus(def,ailment);
+    }
+    if(mvd.meta?.flinch_chance>0&&Math.random()*100<(att.ability==='serene-grace'?mvd.meta.flinch_chance*2:mvd.meta.flinch_chance)) def.flinched=true;
+  }
+
+  checkSitrus(def);checkSitrus(att);
+  refreshBattleUI();
+}
+
+// ═══════════════════════════════════════════
+// STATUS MOVES HANDLER
+// ═══════════════════════════════════════════
+async function handleStatusMove(att,def,mvd,mn){
+  if(WEATHER_MOVES[mn]){const w=WEATHER_MOVES[mn];B.weather=w.w;B.weatherTurns=8;blogLine(w.msg,'info');return;}
+  if(mn==='rest'){
+    if(att.ability==='magic-guard'||(att.currentHp===att.maxHp&&!att.status)){blogLine('¡No tuvo efecto!','info');return;}
+    att.currentHp=att.maxHp;att.status='SLP';att.sleepTurns=2;
+    blogLine(`${att.displayName} usó Descanso y se durmió.`,'heal');refreshBattleUI();return;
+  }
+  if(HEAL_MOVES.includes(mn)){
+    let healAmt=Math.floor(att.maxHp*.5);
+    if(B.weather==='sun'&&(mn==='moonlight'||mn==='morning-sun'||mn==='synthesis')) healAmt=Math.floor(att.maxHp*.667);
+    att.currentHp=Math.min(att.maxHp,att.currentHp+healAmt);
+    showDmgFloat(healAmt,att===G.playerTeam[B.playerIdx]?false:true,'heal');
+    blogLine(`${att.displayName} recuperó HP!`,'heal');refreshBattleUI();return;
+  }
+  if(BOOST_MOVES[mn]){
+    const b=BOOST_MOVES[mn];
+    if(b._transfer){blogLine(`${att.displayName} pasó sus stats!`,'info');return;}
+    Object.entries(b).forEach(([s,v])=>{if(s!=='_transfer') att.statBoosts[s]=Math.max(-6,Math.min(6,(att.statBoosts[s]||0)+v));});
+    if(b.atk>0||b.spa>0||b.spe>0) blogLine(`¡${att.displayName} subió sus stats de ataque!`,'super');
+    else if(b.def>0||b.spd>0) blogLine(`¡${att.displayName} subió sus stats de defensa!`,'super');
+    else blogLine(`¡${att.displayName} cambió sus stats!`,'super');
+    return;
+  }
+  if(mvd?.meta?.ailment?.name&&mvd.meta.ailment.name!=='none'){
+    if(!def.status) applyStatus(def,mvd.meta.ailment.name);
+    else blogLine('¡No tuvo efecto!','info');return;
+  }
+  blogLine(`${att.displayName} usa ${fmtMv(mn)}...`,'info');
+}
+
+function applyStatus(poke,ailment){
+  const m={burn:'BRN',paralysis:'PAR',poison:'PSN','bad-poison':'PSN',sleep:'SLP',freeze:'FRZ'};
+  const s=m[ailment];if(!s) return;
+  if(poke.status) return;
+  // Immunity: fire types can't be burned, electric can't be paralyzed, etc.
+  if(s==='BRN'&&poke.types?.includes('fire')) return;
+  if(s==='PAR'&&poke.types?.includes('electric')) return;
+  if(s==='PSN'&&(poke.types?.includes('poison')||poke.types?.includes('steel'))) return;
+  if(s==='FRZ'&&poke.types?.includes('ice')) return;
+  poke.status=s;
+  if(s==='SLP') poke.sleepTurns=1+Math.floor(Math.random()*3);
+  const msgs={BRN:'fue quemado',PAR:'fue paralizado',PSN:'fue envenenado',SLP:'se durmió',FRZ:'fue congelado'};
+  blogLine(`¡${poke.displayName} ${msgs[s]}!`,'damage');
+  if(poke.item==='lum-berry'&&!poke.usedBerry){poke.status=null;poke.usedBerry=true;blogLine(`¡${poke.displayName} curó su estado con Baya Lum!`,'heal');}
+  if(s==='SLP') poke.sleepTurns=0;
+  refreshBattleUI();
+}
+function checkSitrus(poke){
+  const it=ITEMS[poke.item]||{};
+  if(it.sitrus&&!poke.usedBerry&&poke.currentHp<=poke.maxHp*.5&&poke.currentHp>0){
+    const h=Math.floor(poke.maxHp*it.sitrus);poke.currentHp=Math.min(poke.maxHp,poke.currentHp+h);
+    poke.usedBerry=true;blogLine(`${poke.displayName} recuperó HP con Baya Sitrus!`,'heal');
+  }
+}
+function dealDmg(poke,dmg,isEnemy){
+  poke.currentHp=Math.max(0,poke.currentHp-dmg);
+  shake(isEnemy?'e-sprite':'p-sprite');
+  refreshBattleUI();
+}
+function shake(id){const el=$(id);el.classList.remove('sp-shake');void el.offsetWidth;el.classList.add('sp-shake');setTimeout(()=>el.classList.remove('sp-shake'),400);}
+
+// ═══════════════════════════════════════════
+// END OF TURN
+// ═══════════════════════════════════════════
+async function endTurn(){
+  const p=G.playerTeam[B.playerIdx],e=B.enemyTeam[B.enemyIdx];
+  [p,e].forEach(pk=>{
+    if(!pk||pk.currentHp<=0) return;
+    const ab=pk.ability;const it=ITEMS[pk.item]||{};
+    // Burn / Poison
+    if(pk.status==='BRN'&&ab!=='magic-guard'){pk.currentHp=Math.max(0,pk.currentHp-Math.floor(pk.maxHp*.0625));blogLine(`${pk.displayName} sufre daño por quemadura!`,'damage');}
+    if(pk.status==='PSN'){
+      if(ab==='poison-heal'){pk.currentHp=Math.min(pk.maxHp,pk.currentHp+Math.floor(pk.maxHp*.125));blogLine(`${pk.displayName} se cura con veneno!`,'heal');}
+      else if(ab!=='magic-guard'){pk.currentHp=Math.max(0,pk.currentHp-Math.floor(pk.maxHp*.0625));blogLine(`${pk.displayName} sufre daño por veneno!`,'damage');}
+    }
+    // Leftovers / Black Sludge
+    if(it.eot&&ab!=='magic-guard') pk.currentHp=Math.min(pk.maxHp,pk.currentHp+Math.floor(pk.maxHp*it.eot));
+    // Flame/Toxic Orb
+    if(it.flameBurn&&!pk.status) applyStatus(pk,'burn');
+    if(it.toxicPoison&&!pk.status) applyStatus(pk,'poison');
+    // Speed Boost
+    if(ab==='speed-boost') pk.statBoosts.spe=Math.min(6,(pk.statBoosts.spe||0)+1);
+    // Moxie tracking reset
+    pk.flinched=false;
+  });
+  // Weather
+  if(B.weather){
+    B.weatherTurns--;
+    if(B.weatherTurns<=0){blogLine('El tiempo volvió a la normalidad.','info');B.weather=null;}
+    else if(B.weather==='sand'){
+      [p,e].forEach(pk=>{if(!pk||pk.currentHp<=0) return;if(!['rock','steel','ground'].some(t=>pk.types?.includes(t))&&pk.ability!=='magic-guard'&&pk.ability!=='sand-veil'&&pk.ability!=='sand-rush'){pk.currentHp=Math.max(0,pk.currentHp-Math.floor(pk.maxHp*.0625));blogLine(`${pk.displayName} es golpeado por la arena!`,'damage');}});
+    } else if(B.weather==='hail'){
+      [p,e].forEach(pk=>{if(!pk||pk.currentHp<=0) return;if(!pk.types?.includes('ice')&&pk.ability!=='magic-guard'&&pk.ability!=='ice-body'&&pk.ability!=='snow-cloak'){pk.currentHp=Math.max(0,pk.currentHp-Math.floor(pk.maxHp*.0625));blogLine(`${pk.displayName} es golpeado por el granizo!`,'damage');}});
+    }
+  }
+  B.turn++;
+}
+
+// ═══════════════════════════════════════════
+// FAINT HANDLERS
+// ═══════════════════════════════════════════
+async function onEnemyFaint(){
+  const e=B.enemyTeam[B.enemyIdx];
+  blogLine(`¡${e.displayName} fue debilitado!`,'super');
+  const es=$('e-sprite');es.classList.add('sp-faint');
+  await sleep(FAINT_DELAY);es.classList.remove('sp-faint');es.style.display='none';
+
+  // Moxie / Beast Boost
+  const poke=G.playerTeam[B.playerIdx];
+  if(poke.ability==='moxie'&&poke.currentHp>0){
+    poke.statBoosts.atk=Math.min(6,(poke.statBoosts.atk||0)+1);
+    blogLine(`¡Moxie de ${poke.displayName} subió su Ataque!`,'super');
+  }
+
+  B.enemyIdx++;
+  if(B.enemyIdx>=B.enemyTeam.length){await onBattleWin();return;}
+  const next=B.enemyTeam[B.enemyIdx];
+  blogLine(`¡${B.opp.name} envía a ${next.displayName}!`,'info');
+  await sleep(700);
+  await checkEntry(next,G.playerTeam[B.playerIdx],true);
+  await refreshSprites();refreshBattleUI();renderPartyRow();await refreshMoves();setEnabled(true);
+}
+
+async function onPlayerFaint(){
+  const p=G.playerTeam[B.playerIdx];
+  blogLine(`¡${p.displayName} fue debilitado!`,'damage');
+  const ps=$('p-sprite');ps.classList.add('sp-faint');
+  await sleep(FAINT_DELAY);ps.classList.remove('sp-faint');ps.style.display='none';
+  const alive=G.playerTeam.filter((_,i)=>i!==B.playerIdx&&G.playerTeam[i].currentHp>0);
+  if(!alive.length){await onBattleLoss();return;}
+  blogLine('¡Elige tu siguiente Pokémon!','info');
+  B.switchForced=true;renderPartyRow();openSwitch();
+}
+
+async function onBattleWin(){
+  const isChamp=B.memberIdx===REGIONS[B.region].members.length-1;
+  const bp=isChamp?50:20;
+  G.bp+=bp;
+  G.progress[B.region]=(G.progress[B.region]||0)+1;
+  if(isChamp) G.completed[B.region]=true;
+  saveGame();
+  modal(isChamp?'⭐ ¡CAMPEÓN!':'¡Victoria!',
+    (isChamp?`¡Has conquistado el Alto Mando de ${REGIONS[B.region].name}!<br><br>`:
+    `¡Has derrotado a ${B.opp.name}!<br><br>`)+'<b style="color:var(--gold)">+'+bp+' BP</b> obtenidos',
+    [{text:'Continuar →',fn:()=>goTo('hub')}]);
+}
+
+async function onBattleLoss(){
+  try{localStorage.removeItem(SAVE_KEY);}catch(e){}
+  modal('💀 GAME OVER','Tu equipo cayó por completo. Al ser un roguelike, la partida termina aquí: el equipo y la dificultad quedan reseteados.<br><br>Empieza una nueva partida para volver a elegir dificultad y equipo.',
+    [{text:'Nueva Partida',fn:()=>{B=null;newGame();}}]);
+}
+
+// ═══════════════════════════════════════════
+// SWITCH & ITEMS
+// ═══════════════════════════════════════════
+function openSwitch(){
+  $('moves-ui').style.display='none';$('switch-ui').style.display='block';
+  $('btn-cancel-switch').style.display=B.switchForced?'none':'inline-block';
+  const g=$('party-grid');g.innerHTML='';
+  G.playerTeam.forEach((p,i)=>{
+    const btn=document.createElement('button');btn.className='party-btn';
+    const pct=Math.max(0,(p.currentHp/p.maxHp)*100);
+    const hc=pct>50?'var(--green)':pct>20?'var(--yellow)':'var(--red2)';
+    btn.innerHTML=`<img src="${spriteDefault(p.id||1)}" alt="${p.displayName}" onerror="this.src='${spriteDefault(1)}'">
+      <div>${p.displayName}</div>
+      <div style="color:${hc};font-size:9px;">${p.currentHp}/${p.maxHp}</div>`;
+    btn.disabled=p.currentHp<=0||i===B.playerIdx;
+    btn.onclick=()=>doSwitch(i);
+    g.appendChild(btn);
+  });
+}
+function closeSwitch(){
+  if(B&&B.switchForced) return;
+  $('switch-ui').style.display='none';$('moves-ui').style.display='block';
+}
+async function doSwitch(idx){
+  const wasForced=B.switchForced;
+  // Natural cure on switch out
+  const old=G.playerTeam[B.playerIdx];
+  if(old.ability==='natural-cure') old.status=null;
+  if(old.ability==='regenerator'&&old.currentHp>0){old.currentHp=Math.min(old.maxHp,old.currentHp+Math.floor(old.maxHp/3));blogLine(`${old.displayName} recuperó HP!`,'heal');}
+  B.playerIdx=idx;B.switchForced=false;
+  G.playerTeam[idx].statBoosts={};G.playerTeam[idx].choiceMove=null;
+  $('switch-ui').style.display='none';$('moves-ui').style.display='block';
+  blogLine(`¡Adelante, ${G.playerTeam[idx].displayName}!`,'info');
+  await checkEntry(G.playerTeam[idx],B.enemyTeam[B.enemyIdx],false);
+  await refreshSprites();refreshBattleUI();renderPartyRow();await refreshMoves();
+  if(!wasForced){
+    const eMv=aiMove(B.enemyTeam[B.enemyIdx],G.playerTeam[idx]);
+    if(eMv!=='_struggle') B.enemyTeam[B.enemyIdx].ppMap[eMv]=Math.max(0,(B.enemyTeam[B.enemyIdx].ppMap[eMv]||1)-1);
+    await executeMove(B.enemyTeam[B.enemyIdx],G.playerTeam[B.playerIdx],eMv,false);
+    if(G.playerTeam[B.playerIdx].currentHp<=0){await onPlayerFaint();return;}
+    await endTurn();refreshBattleUI();
+  }
+  setEnabled(true);
+}
+
+function confirmFlee(){modal('Rendirse','¿Seguro que quieres abandonar el combate?',[{text:'Sí',cls:'btn-secondary',fn:()=>goTo('hub')},{text:'No',fn:()=>{}}]);}
+
+function openItems(){
+  if(!B) return;
+  const p=G.playerTeam[B.playerIdx];
+  const fainted=G.playerTeam.filter(pk=>pk.currentHp<=0);
+  modal('Mochila',
+    `<div style="text-align:left;line-height:2.2;font-size:12px;">
+      🔵 Revivir ×${G.items.revive} — Revive al primer Pokémon caído<br>
+      💊 Max Poción ×${G.items.maxpotion} — HP completo a ${p.displayName}<br>
+      ✨ Full Restore ×${G.items.fullrestore} — HP + estado a ${p.displayName}
+    </div>`,
+    [
+      {text:`Revivir (${G.items.revive})`,cls:'btn-secondary',fn:async()=>{
+        if(!G.items.revive||!fainted.length){modal('Sin objetivo','',[{text:'OK',fn:()=>{}}]);return;}
+        G.items.revive--;fainted[0].currentHp=Math.floor(fainted[0].maxHp*.5);
+        blogLine(`¡${fainted[0].displayName} fue revivido!`,'heal');refreshBattleUI();renderPartyRow();
+      }},
+      {text:`Max Poción (${G.items.maxpotion})`,cls:'btn-secondary',fn:async()=>{
+        if(!G.items.maxpotion){modal('Sin items','',[{text:'OK',fn:()=>{}}]);return;}
+        G.items.maxpotion--;p.currentHp=p.maxHp;blogLine(`¡${p.displayName} recuperó HP!`,'heal');refreshBattleUI();
+        const eMv=aiMove(B.enemyTeam[B.enemyIdx],p);if(eMv!=='_struggle') B.enemyTeam[B.enemyIdx].ppMap[eMv]=Math.max(0,(B.enemyTeam[B.enemyIdx].ppMap[eMv]||1)-1);
+        await executeMove(B.enemyTeam[B.enemyIdx],p,eMv,false);
+        if(p.currentHp<=0) await onPlayerFaint();
+        else{await endTurn();refreshBattleUI();renderPartyRow();setEnabled(true);}
+      }},
+      {text:`Full Restore (${G.items.fullrestore})`,cls:'btn-secondary',fn:async()=>{
+        if(!G.items.fullrestore){modal('Sin items','',[{text:'OK',fn:()=>{}}]);return;}
+        G.items.fullrestore--;p.currentHp=p.maxHp;p.status=null;blogLine(`¡${p.displayName} se recuperó!`,'heal');refreshBattleUI();
+        const eMv=aiMove(B.enemyTeam[B.enemyIdx],p);if(eMv!=='_struggle') B.enemyTeam[B.enemyIdx].ppMap[eMv]=Math.max(0,(B.enemyTeam[B.enemyIdx].ppMap[eMv]||1)-1);
+        await executeMove(B.enemyTeam[B.enemyIdx],p,eMv,false);
+        if(p.currentHp<=0) await onPlayerFaint();
+        else{await endTurn();refreshBattleUI();renderPartyRow();setEnabled(true);}
+      }},
+      {text:'Cancelar',cls:'btn-secondary',fn:()=>{}}
+    ]);
+}
+
+// ═══════════════════════════════════════════
+// EXAMPLE TEAMS (5 variants — random)
+// ═══════════════════════════════════════════
+const EXAMPLES=[
+`Garchomp @ Rocky Helmet
+Ability: Rough Skin
+EVs: 252 HP / 4 Atk / 252 Def
+Impish Nature
+- Earthquake
+- Dragon Claw
+- Stealth Rock
+- Fire Fang
+
+Toxapex @ Black Sludge
+Ability: Regenerator
+EVs: 252 HP / 252 Def / 4 SpD
+Bold Nature
+- Scald
+- Toxic
+- Recover
+- Haze
+
+Ferrothorn @ Leftovers
+Ability: Iron Barbs
+EVs: 252 HP / 88 Def / 168 SpD
+Relaxed Nature
+- Power Whip
+- Gyro Ball
+- Leech Seed
+- Spikes
+
+Heatran @ Air Balloon
+Ability: Flash Fire
+EVs: 252 SpA / 4 SpD / 252 Spe
+Timid Nature
+- Magma Storm
+- Flash Cannon
+- Earth Power
+- Taunt
+
+Clefable @ Leftovers
+Ability: Magic Guard
+EVs: 252 HP / 252 Def / 4 SpD
+Bold Nature
+- Moonblast
+- Flamethrower
+- Calm Mind
+- Recover
+
+Dragapult @ Choice Specs
+Ability: Clear Body
+EVs: 4 HP / 252 SpA / 252 Spe
+Timid Nature
+- Shadow Ball
+- Dragon Pulse
+- Thunderbolt
+- Fire Blast`,
+
+`Charizard @ Choice Specs
+Ability: Blaze
+EVs: 4 HP / 252 SpA / 252 Spe
+Timid Nature
+- Fire Blast
+- Air Slash
+- Dragon Pulse
+- Focus Blast
+
+Venusaur @ Life Orb
+Ability: Chlorophyll
+EVs: 4 HP / 252 SpA / 252 Spe
+Timid Nature
+- Leaf Storm
+- Sludge Bomb
+- Sleep Powder
+- Synthesis
+
+Tyranitar @ Smooth Rock
+Ability: Sand Stream
+EVs: 252 Atk / 4 Def / 252 Spe
+Jolly Nature
+- Crunch
+- Earthquake
+- Stone Edge
+- Dragon Dance
+
+Garchomp @ Choice Scarf
+Ability: Rough Skin
+EVs: 4 HP / 252 Atk / 252 Spe
+Jolly Nature
+- Earthquake
+- Dragon Claw
+- Stone Edge
+- Fire Fang
+
+Excadrill @ Life Orb
+Ability: Sand Rush
+EVs: 252 Atk / 4 HP / 252 Spe
+Jolly Nature
+- Iron Head
+- Earthquake
+- Rock Slide
+- Swords Dance
+
+Scizor @ Life Orb
+Ability: Technician
+EVs: 252 Atk / 4 Def / 252 Spe
+Adamant Nature
+- Bullet Punch
+- Bug Bite
+- Superpower
+- Swords Dance`,
+
+`Politoed @ Damp Rock
+Ability: Drizzle
+EVs: 252 HP / 252 Def / 4 SpD
+Bold Nature
+- Scald
+- Toxic
+- Protect
+- Ice Beam
+
+Kingdra @ Life Orb
+Ability: Swift Swim
+EVs: 4 HP / 252 SpA / 252 Spe
+Modest Nature
+- Surf
+- Draco Meteor
+- Flash Cannon
+- Ice Beam
+
+Greninja @ Life Orb
+Ability: Torrent
+EVs: 4 HP / 252 SpA / 252 Spe
+Timid Nature
+- Hydro Pump
+- Dark Pulse
+- Ice Beam
+- U-turn
+
+Toxapex @ Black Sludge
+Ability: Regenerator
+EVs: 252 HP / 252 Def / 4 SpD
+Bold Nature
+- Scald
+- Toxic
+- Recover
+- Haze
+
+Ferrothorn @ Leftovers
+Ability: Iron Barbs
+EVs: 252 HP / 88 Def / 168 SpD
+Relaxed Nature
+- Power Whip
+- Gyro Ball
+- Leech Seed
+- Spikes
+
+Barraskewda @ Choice Band
+Ability: Swift Swim
+EVs: 4 HP / 252 Atk / 252 Spe
+Jolly Nature
+- Liquidation
+- Close Combat
+- Psychic Fangs
+- Aqua Jet`,
+
+`Reuniclus @ Life Orb
+Ability: Magic Guard
+EVs: 252 HP / 252 SpA / 4 SpD
+Quiet Nature
+- Calm Mind
+- Psyshock
+- Focus Blast
+- Shadow Ball
+
+Conkeldurr @ Assault Vest
+Ability: Guts
+EVs: 252 HP / 252 Atk / 4 SpD
+Adamant Nature
+- Drain Punch
+- Mach Punch
+- Ice Punch
+- Thunder Punch
+
+Slowking @ Leftovers
+Ability: Regenerator
+EVs: 252 HP / 252 SpA / 4 SpD
+Modest Nature
+- Scald
+- Psychic
+- Slack Off
+- Calm Mind
+
+Stakataka @ Life Orb
+Ability: Beast Boost
+EVs: 252 HP / 252 Atk / 4 SpD
+Brave Nature
+- Gyro Ball
+- Stone Edge
+- Earthquake
+- Trick Room
+
+Malamar @ Leftovers
+Ability: Contrary
+EVs: 252 HP / 252 Atk / 4 SpD
+Adamant Nature
+- Superpower
+- Night Slash
+- Psycho Cut
+- Topsy-Turvy
+
+Cofagrigus @ Ghostium Z
+Ability: Mummy
+EVs: 252 HP / 252 SpA / 4 SpD
+Quiet Nature
+- Shadow Ball
+- Will-O-Wisp
+- Nasty Plot
+- Trick Room`,
+
+`Dragapult @ Choice Band
+Ability: Clear Body
+EVs: 4 HP / 252 Atk / 252 Spe
+Adamant Nature
+- Dragon Darts
+- Shadow Sneak
+- U-turn
+- Fire Blast
+
+Weavile @ Life Orb
+Ability: Pressure
+EVs: 4 HP / 252 Atk / 252 Spe
+Jolly Nature
+- Knock Off
+- Ice Shard
+- Icicle Crash
+- Swords Dance
+
+Volcarona @ Life Orb
+Ability: Flame Body
+EVs: 4 HP / 252 SpA / 252 Spe
+Timid Nature
+- Quiver Dance
+- Fire Blast
+- Bug Buzz
+- Giga Drain
+
+Scizor @ Life Orb
+Ability: Technician
+EVs: 252 Atk / 4 Def / 252 Spe
+Adamant Nature
+- Bullet Punch
+- Bug Bite
+- Superpower
+- Swords Dance
+
+Garchomp @ Rocky Helmet
+Ability: Rough Skin
+EVs: 4 HP / 252 Atk / 252 Spe
+Jolly Nature
+- Earthquake
+- Dragon Claw
+- Stone Edge
+- Swords Dance
+
+Heatran @ Leftovers
+Ability: Flash Fire
+EVs: 252 SpA / 4 SpD / 252 Spe
+Timid Nature
+- Magma Storm
+- Flash Cannon
+- Earth Power
+- Stealth Rock`
+];
+
+function loadExample(){
+  const idx=Math.floor(Math.random()*EXAMPLES.length);
+  $('paste-input').value=EXAMPLES[idx];
+  importTeam();
+}
+
+// ═══════════════════════════════════════════
+// TITLE SCREEN FUNCTIONS
+// ═══════════════════════════════════════════
+function newGame(){
+  G={playerTeam:[],bp:0,items:{revive:0,maxpotion:0,fullrestore:0,pprestore:0},progress:{},completed:{},playerSkin:'trainer1.png',difficulty:null,runLocked:false};
+  try{localStorage.removeItem(SAVE_KEY);}catch(e){}
+  if($('paste-input')) $('paste-input').value='';
+  $('parse-ok').style.display='none';$('parse-err').style.display='none';
+  renderTeamGrid([]);
+  // marcar selección por defecto
+  document.querySelectorAll('.char-card').forEach(c=>c.classList.remove('selected'));
+  goTo('charselect');
+}
+function chooseSkin(skin,label){
+  if(!G||!G.playerTeam) G={playerTeam:[],bp:0,items:{revive:0,maxpotion:0,fullrestore:0,pprestore:0},progress:{},completed:{}};
+  G.playerSkin=skin;
+  document.querySelectorAll('.char-card').forEach(c=>c.classList.remove('selected'));
+  const card=skin==='trainer2.png'?$('char-girl'):$('char-boy');
+  if(card) card.classList.add('selected');
+  goTo('difficulty');
+}
+function chooseDifficulty(level){
+  G.difficulty=level;
+  saveGame();
+  goTo('team');
+}
+function playerSkinSprite(){
+  return './'+((G&&G.playerSkin)||'trainer1.png');
+}
+async function continueGame(){
+  if(loadGame()){
+    if(G.runLocked&&G.playerTeamSnap&&G.playerTeamSnap.length){
+      G.playerTeam=G.playerTeamSnap;
+      renderTeamGrid(G.playerTeam);
+      goTo('hub');
+      return;
+    }
+    goTo('team');
+    if($('paste-input').value.trim()){
+      await importTeam();
+      if(G.playerTeam.length) goTo('hub');
+    }
+  } else {alert('No se encontró partida guardada.');}
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+window.addEventListener('load',()=>{
+  initStars();
+  renderTeamGrid([]);
+  if(localStorage.getItem(SAVE_KEY)) $('btn-continue').style.display='block';
+});
+// Compat
+function showScreen(id){goTo(id);}
+</script>
+</body>
+</html>
